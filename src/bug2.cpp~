@@ -22,12 +22,13 @@ double rot_vel=.5;
 double drive_speed = .2;
 double angle_error = .1;
 double distance_error = .01;
+double distance_error_small = .00001;
 
 double start_x;
 double start_y;
 double start_theta;
 
-double test_distance = .5;
+double test_distance = .75;
 double backup_distance = .01;
 
 double dist_traveled_x = 0;
@@ -120,7 +121,7 @@ int main(int argc, char **argv)
 					msg.angular.z = -rot_vel;
 				}
 
-				ROS_INFO("SPINNING: current theta: %f goal_theta: %f", current_theta, goal_theta);
+//				ROS_INFO("SPINNING: current theta: %f goal_theta: %f", current_theta, goal_theta);
 			//	ROS_INFO("DRIVING: x: %f y: %f", current_pos_x, current_pos_y);
 			}
 			else if (!(current_pos_x <= goal_x+distance_error && current_pos_x >= goal_x-distance_error) || !(current_pos_y <= goal_y+distance_error && current_pos_y >= goal_y-distance_error))
@@ -128,12 +129,12 @@ int main(int argc, char **argv)
 				msg.linear.x = drive_speed;
 				msg.angular.z = 0;
 			//	ROS_INFO("SPINNING: current theta: %f", current_theta);
-				ROS_INFO("DRIVING: x: %f y: %f, goal_x: %f, goal_y: %f", current_pos_x, current_pos_y, goal_x, goal_y);
+//				ROS_INFO("DRIVING: x: %f y: %f, goal_x: %f, goal_y: %f", current_pos_x, current_pos_y, goal_x, goal_y);
 			}
 			else if((current_pos_x <= goal_x+distance_error && current_pos_x >= goal_x-distance_error) && (current_pos_y <= goal_y+distance_error && current_pos_y >= goal_y-distance_error))
 			{
 				msg.linear.x = 0;
-				ROS_INFO("STOPPING");
+//				ROS_INFO("STOPPING");
 			}
 			if(bump_sensor)
 			{
@@ -146,26 +147,27 @@ int main(int argc, char **argv)
 		{
 			if(count%steps == 0)
 			{
+				ROS_INFO("STEP 0");
 				msg.linear.x = -drive_speed;
 				if(!initialized)
 				{
 					start_x = current_pos_x;
 					start_y = current_pos_y;
-					ROS_INFO("x: %f y: %f", start_x, start_y);
+//					ROS_INFO("x: %f y: %f", start_x, start_y);
 					initialized = true;
 				}
 	
 				dist_traveled_x = start_x - current_pos_x;
 				dist_traveled_y = start_y - current_pos_y; 	
-				ROS_INFO("current_x: %f current_y: %f", current_pos_x, current_pos_y);
-				ROS_INFO("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
+//				ROS_INFO("current_x: %f current_y: %f", current_pos_x, current_pos_y);
+//				ROS_INFO("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
 
 				dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);				    
-				ROS_INFO("dist_traveled: %f \n", dist_traveled);
+//				ROS_INFO("dist_traveled: %f \n", dist_traveled);
 
 				if(backup_distance-distance_error < dist_traveled && dist_traveled < backup_distance+distance_error)
 				{
-					ROS_INFO("STOPPING STEP 0");
+					
 					count++;					
 					initialized = false;
 					msg.linear.x = 0;
@@ -174,15 +176,15 @@ int main(int argc, char **argv)
 
 			else if(count%steps ==1)
 			{
-				ROS_INFO("I SHOULD BE SPINNING");
+				ROS_INFO("Step 1");
 				msg.angular.z = rot_vel;
 				if(!initialized)
 				{
 					start_theta = current_theta;
 					initialized = true;
-					ROS_INFO("start_theta: %f", start_theta);
+//					ROS_INFO("start_theta: %f", start_theta);
 				}
-				ROS_INFO("current_theta: %f, start_theta: %f", current_theta, start_theta);
+//				ROS_INFO("current_theta: %f, start_theta: %f", current_theta, start_theta);
 				if((current_theta <= start_theta+1.57+angle_error && current_theta >= start_theta+1.57-angle_error))
 				{
 					count++;
@@ -194,22 +196,23 @@ int main(int argc, char **argv)
 			
 			else if(count%steps == 2)
 			{
+				ROS_INFO("STEP 2");
 				msg.linear.x = drive_speed;
 				if(!initialized)
 				{
 					start_x = current_pos_x;
 					start_y = current_pos_y;
-					ROS_INFO("x: %f y: %f", start_x, start_y);
+//					ROS_INFO("x: %f y: %f", start_x, start_y);
 					initialized = true;
 				}
 	
 				dist_traveled_x = start_x - current_pos_x;
 				dist_traveled_y = start_y - current_pos_y; 	
-				ROS_INFO("current_x: %f current_y: %f", current_pos_x, current_pos_y);
-				ROS_INFO("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
+//				ROS_INFO("current_x: %f current_y: %f", current_pos_x, current_pos_y);
+//				ROS_INFO("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
 
 				dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);				    
-				ROS_INFO("dist_traveled: %f \n", dist_traveled);
+//				ROS_INFO("dist_traveled: %f \n", dist_traveled);
 
 				if(bump_sensor)
 				{
@@ -220,7 +223,7 @@ int main(int argc, char **argv)
 				
 				if(test_distance-distance_error < dist_traveled && dist_traveled <= test_distance+distance_error)
 				{
-					ROS_INFO("STOPPING STEP 2");
+					
 					count++;					
 					initialized = false;
 					msg.linear.x = 0;
@@ -228,6 +231,7 @@ int main(int argc, char **argv)
 			}
 			else if(count%steps ==3)
 			{
+				ROS_INFO("Step 3");
 				msg.angular.z = -rot_vel;
 				if(!initialized)
 				{
@@ -239,42 +243,42 @@ int main(int argc, char **argv)
 					count++;
 					initialized = false;
 					msg.angular.z = 0;
-					ROS_INFO("we've hit this spin back step (3)");
+//					ROS_INFO("we've hit this spin back step (3)");
 				}
 			}
 			else if(count%steps == 4)
 			{
-				ROS_INFO("we've gotten to step 4...");
+				ROS_INFO("step 4...");
 				
 				
 			
 					
-					if(!initialized)
-					{
-						start_x = current_pos_x;
-						start_y = current_pos_y;
-						ROS_INFO("x: %f y: %f", start_x, start_y);
-						initialized = true;
-						forward = drive_speed;
-						rot = 0;
+				if(!initialized)
+				{
+					start_x = current_pos_x;
+					start_y = current_pos_y;
+//					ROS_INFO("x: %f y: %f", start_x, start_y);
+					initialized = true;
+					forward = drive_speed;
+					rot = 0;
 						
-						start_theta = current_theta;
-					}
+					start_theta = current_theta;
+				}
 					
-					msg.linear.x = drive_speed;
-					msg.angular.z = rot;
-					dist_traveled_x = start_x - current_pos_x;
-					dist_traveled_y = start_y - current_pos_y; 	
-					ROS_INFO("current_x: %f current_y: %f", current_pos_x, current_pos_y);
-					ROS_INFO("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
+				msg.linear.x = forward;
+				msg.angular.z = rot;
+				dist_traveled_x = start_x - current_pos_x;
+				dist_traveled_y = start_y - current_pos_y; 	
+				//ROS_INFO("current_x: %f current_y: %f", current_pos_x, current_pos_y);
+				//ROS_INFO("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
 
-					dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);				    
-					ROS_INFO("dist_traveled: %f \n", dist_traveled);
+				dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);				    
+				//ROS_INFO("dist_traveled: %f \n", dist_traveled);
 				
 				
 				
 				
-				if(backup_distance-distance_error < dist_traveled && dist_traveled <= backup_distance+distance_error)
+				if(backup_distance-distance_error + .1 < dist_traveled && dist_traveled <= backup_distance+distance_error + .1)
 				{		
 					if(bump_sensor && !reset)
 					{
@@ -291,17 +295,16 @@ int main(int argc, char **argv)
 					if (reset)
 					{
 						forward = 0;
-						rot = rot_vel;
+						rot = -rot_vel;
 					}
-					if((current_theta <= start_theta-1.57+angle_error && current_theta >= start_theta-1.57-angle_error))
-					{
-						count++;
-						initialized = false;
-						reset = false;
-						msg.angular.z = 0;
-					}
-					
-							
+				}
+				
+				if((current_theta <= start_theta-1.57+angle_error && current_theta >= start_theta-1.57-angle_error))
+				{
+					count++;
+					initialized = false;
+					reset = false;
+					msg.angular.z = 0;
 				}
 				
 		
