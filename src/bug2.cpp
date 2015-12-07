@@ -18,10 +18,10 @@ double current_theta;
 double goal_x = 0.1;
 double goal_y = 3;
 double goal_theta;
-double rot_vel=.5;
-double drive_speed = .2;
-double angle_error = .07;
-double distance_error = .01;
+double rot_vel=.03;
+double drive_speed = .1;
+double angle_error = .01;
+double distance_error = .1;
 double distance_error_small = .00001;
 
 double start_x;
@@ -153,15 +153,15 @@ int main(int argc, char **argv)
 		//			msg.angular.z = -rot_vel;
 		//		}
 
-//				ROS_INFO("SPINNING: current theta: %f goal_theta: %f", current_theta, goal_theta);
+				ROS_INFO("SPINNING: current theta: %f goal_theta: %f", current_theta, goal_theta);
 			//	ROS_INFO("DRIVING: x: %f y: %f", current_pos_x, current_pos_y);
 			}
 			else if (!(current_pos_x <= goal_x+distance_error && current_pos_x >= goal_x-distance_error) || !(current_pos_y <= goal_y+distance_error && current_pos_y >= goal_y-distance_error))
 			{
 				msg.linear.x = drive_speed;
 				msg.angular.z = 0;
-			//	ROS_INFO("SPINNING: current theta: %f", current_theta);
-//				ROS_INFO("DRIVING: x: %f y: %f, goal_x: %f, goal_y: %f", current_pos_x, current_pos_y, goal_x, goal_y);
+				ROS_INFO("SPINNING: current theta: %f", current_theta);
+				ROS_INFO("DRIVING: x: %f y: %f, goal_x: %f, goal_y: %f", current_pos_x, current_pos_y, goal_x, goal_y);
 			}
 			else if((current_pos_x <= goal_x+distance_error && current_pos_x >= goal_x-distance_error) && (current_pos_y <= goal_y+distance_error && current_pos_y >= goal_y-distance_error))
 			{
@@ -274,7 +274,11 @@ int main(int argc, char **argv)
 					start_theta = current_theta;
 					initialized = true;
 				}
-				if((current_theta <= start_theta-1.57+angle_error && current_theta >= start_theta-1.57-angle_error))
+				uv = greatest(angles::normalize_angle_positive(start_theta-1.57+angle_error), angles::normalize_angle_positive(start_theta-1.57-angle_error));
+				lv = least(angles::normalize_angle_positive(start_theta-1.57+angle_error), angles::normalize_angle_positive(start_theta-1.57-angle_error));
+				
+				ROS_INFO("current_theta: %f, start_theta: %f, boundaries: %f , %f", current_theta, start_theta, lv, uv);
+				if((uv < current_theta && current_theta <= uv + 2*angle_error) || (lv > current_theta && current_theta > (lv - 2*angle_error)))
 				{
 					count++;
 					initialized = false;
@@ -379,10 +383,12 @@ int main(int argc, char **argv)
 				}
 			}
 			
-			if (goal_x<current_pos_x && current_pos_x< 0 && goal_y<current_pos_y && current_pos_y<0 && slope == ((current_pos_y-0)/(current_pos_x-0)))
+			if (goal_x<current_pos_x && current_pos_x< 0 && goal_y<current_pos_y && current_pos_y<0 && slope == ((goal_y-current_pos_y-0)/(goal_x-current_pos_x-0)))
 			{
 				testing = false;
+				
 			}
+			ROS_INFO("slope: %f, current slope: %f, current truth: %d", slope, (goal_y-current_pos_y/goal_x-current_pos_x) ,(goal_x<current_pos_x && current_pos_x< 0 && goal_y<=current_pos_y && current_pos_y<0 && slope == ((goal_y-current_pos_y-0)/(goal_x-current_pos_x-0))));
 			ROS_INFO("The state of RESET is: %d", reset);
 						
 		}
