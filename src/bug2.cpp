@@ -20,7 +20,7 @@ double goal_y = 3;
 double goal_theta;
 double rot_vel=.5;
 double drive_speed = .2;
-double angle_error = .1;
+double angle_error = .07;
 double distance_error = .01;
 double distance_error_small = .00001;
 
@@ -28,18 +28,24 @@ double start_x;
 double start_y;
 double start_theta;
 
-double test_distance = .75;
+double robot_radius = 0.16495;
+
+double test_distance = robot_radius*2;
 double backup_distance = .01;
 
 double dist_traveled_x = 0;
-double dist_traveled_y =0;
+double dist_traveled_y = 0;
 double dist_traveled = 0;
 
 double rot;
 double forward;
 
+double uv;
+double lv;
+
+
 int count = 0;
-int steps = 5;
+int steps = 6;
 
 bool initialized = false;
 bool bump_sensor = false;
@@ -84,6 +90,32 @@ void bumpCallback(const gazebo_msgs::ContactsState& msg)
 		bump_sensor = false;
 	//	ROS_INFO("no contact");
 	}
+}
+
+double greatest(double a, double b)
+{
+	if(a>b)
+	{
+		return a;
+	}
+	if(b<a)
+	{
+		return b;
+	}
+	return 0;
+}
+
+double least(double a, double b)
+{
+	if(a<b)
+	{
+		return a;
+	}
+	if(b<a)
+	{
+		return b;
+	}
+	return 0;
 }
 
 
@@ -165,9 +197,9 @@ int main(int argc, char **argv)
 				dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);				    
 //				ROS_INFO("dist_traveled: %f \n", dist_traveled);
 
+				
 				if(backup_distance-distance_error < dist_traveled && dist_traveled < backup_distance+distance_error)
 				{
-					
 					count++;					
 					initialized = false;
 					msg.linear.x = 0;
@@ -184,13 +216,17 @@ int main(int argc, char **argv)
 					initialized = true;
 //					ROS_INFO("start_theta: %f", start_theta);
 				}
-//				ROS_INFO("current_theta: %f, start_theta: %f", current_theta, start_theta);
-				if((current_theta <= start_theta+1.57+angle_error && current_theta >= start_theta+1.57-angle_error))
+				
+				uv = greatest(angles::normalize_angle_positive(start_theta+1.57+angle_error), angles::normalize_angle_positive(start_theta+1.57-angle_error));
+				lv = least(angles::normalize_angle_positive(start_theta+1.57+angle_error), angles::normalize_angle_positive(start_theta+1.57-angle_error));
+				
+				ROS_INFO("current_theta: %f, start_theta: %f, boundaries: %f , %f", current_theta, start_theta, lv, uv);
+				if((uv < current_theta && current_theta <= uv + 2*angle_error) || (lv > current_theta && current_theta > (lv - 2*angle_error)))
 				{
 					count++;
 					initialized = false;
 					msg.angular.z = 0;
-					ROS_INFO("STOPPING STEP 1");
+					//ROS_INFO("STOPPING STEP 1");
 				}
 			}
 			
@@ -248,11 +284,7 @@ int main(int argc, char **argv)
 			}
 			else if(count%steps == 4)
 			{
-				ROS_INFO("step 4...");
-				
-				
-			
-					
+				ROS_INFO("step 4...");	
 				if(!initialized)
 				{
 					start_x = current_pos_x;
@@ -275,18 +307,18 @@ int main(int argc, char **argv)
 				dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);				    
 				//ROS_INFO("dist_traveled: %f \n", dist_traveled);
 				
-				
-				
-				
-				if(backup_distance-distance_error + .1 < dist_traveled && dist_traveled <= backup_distance+distance_error + .1)
-				{		
-					if(bump_sensor && !reset)
-					{
-						count++;
+				if(bump_sensor && !reset)
+				{
+						count=0;
 						initialized = false;
 						reset = false;
 						msg.angular.z = 0;
-					}
+				}
+				
+				
+				if(backup_distance-distance_error + robot_radius < dist_traveled && dist_traveled <= backup_distance+distance_error + robot_radius)
+				{		
+					
 					if(!bump_sensor && !reset)
 					{
 						reset = true;
@@ -298,21 +330,55 @@ int main(int argc, char **argv)
 						rot = -rot_vel;
 					}
 				}
+				uv = greatest(angles::normalize_angle_positive(start_theta-1.57+angle_error), angles::normalize_angle_positive(start_theta-1.57-angle_error));
+				lv = least(angles::normalize_angle_positive(start_theta-1.57+angle_error), angles::normalize_angle_positive(start_theta-1.57-angle_error));
 				
-				if((current_theta <= start_theta-1.57+angle_error && current_theta >= start_theta-1.57-angle_error))
+				ROS_INFO("current_theta: %f, start_theta: %f, boundaries: %f , %f", current_theta, start_theta, lv, uv);
+				if((uv < current_theta && current_theta <= uv + 2*angle_error) || (lv > current_theta && current_theta > (lv - 2*angle_error)))
 				{
 					count++;
 					initialized = false;
 					reset = false;
 					msg.angular.z = 0;
+				}	
+			}
+			
+			if(count%steps == 5)
+			{
+				ROS_INFO("STEP 5");
+				msg.linear.x = drive_speed;
+				if(!initialized)
+				{
+					start_x = current_pos_x;
+					start_y = current_pos_y;
+//					ROS_INFO("x: %f y: %f", start_x, start_y);
+					initialized = true;
+				}
+	
+				dist_traveled_x = start_x - current_pos_x;
+				dist_traveled_y = start_y - current_pos_y; 	
+//				ROS_INFO("current_x: %f current_y: %f", current_pos_x, current_pos_y);
+//				ROS_INFO("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
+
+				dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);				    
+//				ROS_INFO("dist_traveled: %f \n", dist_traveled);
+
+				if(bump_sensor)
+				{
+					count = 0;
+					msg.linear.x = 0;
+					initialized = false;
 				}
 				
-		
-		
-							
+				if(test_distance-distance_error < dist_traveled && dist_traveled <= test_distance+distance_error)
+				{
 					
-				
+					count++;					
+					initialized = false;
+					msg.linear.x = 0;
+				}
 			}
+			
 			if (goal_x<current_pos_x && current_pos_x< 0 && goal_y<current_pos_y && current_pos_y<0 && slope == ((current_pos_y-0)/(current_pos_x-0)))
 			{
 				testing = false;
