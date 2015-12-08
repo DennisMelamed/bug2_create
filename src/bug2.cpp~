@@ -15,14 +15,18 @@
 double current_pos_x;
 double current_pos_y;
 double current_theta;
-double goal_x = 0.1;
+double current_slope;
+
+double goal_x = 1;
 double goal_y = 3;
 double goal_theta;
-double rot_vel=.03;
+double rot_vel=.2;
 double drive_speed = .1;
-double angle_error = .01;
+
+double angle_error = .15;
 double distance_error = .1;
 double distance_error_small = .00001;
+double slope_error = .01;
 
 double start_x;
 double start_y;
@@ -31,7 +35,7 @@ double start_theta;
 double robot_radius = 0.16495;
 
 double test_distance = robot_radius*2;
-double backup_distance = .01;
+double backup_distance = .05;
 
 double dist_traveled_x = 0;
 double dist_traveled_y = 0;
@@ -171,6 +175,7 @@ int main(int argc, char **argv)
 			if(bump_sensor)
 			{
 				testing = true;
+				msg.linear.x = 0;
 			}
 		}
 
@@ -382,13 +387,13 @@ int main(int argc, char **argv)
 					msg.linear.x = 0;
 				}
 			}
-			
-			if (goal_x<current_pos_x && current_pos_x< 0 && goal_y<current_pos_y && current_pos_y<0 && slope == ((current_pos_y-0)/(current_pos_x-0)))
+			current_slope = (goal_y-current_pos_y)/(goal_x-current_pos_x);
+			if (goal_x>current_pos_x && current_pos_x> 0 && goal_y>current_pos_y && current_pos_y>0 && slope>=current_slope-slope_error && slope <= current_slope+slope_error)
 			{
 				testing = false;
 				
 			}
-			ROS_INFO("slope: %f, current slope: %f, current truth: %d", slope, (current_pos_y/current_pos_x) ,(goal_x<current_pos_x && current_pos_x< 0 && goal_y<=current_pos_y && current_pos_y<0 && slope == ((current_pos_y-0)/(current_pos_x-0))));
+			ROS_INFO("slope: %f, current slope: %f, current truth: %d", slope, (goal_y-current_pos_y/goal_x-current_pos_x) ,(goal_x>current_pos_x && current_pos_x> 0 && goal_y>current_pos_y && current_pos_y>0 && slope <= ((goal_y-current_pos_y-0)/(goal_x-current_pos_x-0))+slope_error));
 			ROS_INFO("The state of RESET is: %d", reset);
 						
 		}
