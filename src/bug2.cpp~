@@ -15,7 +15,7 @@
 double current_pos_x;
 double current_pos_y;
 double current_theta;
-double current_slope;
+double current_pos_theta;
 
 double goal_x = 1;
 double goal_y = 3;
@@ -24,6 +24,7 @@ double rot_vel=.2;
 double drive_speed = .1;
 
 double angle_error = .15;
+double angle_pos_error = .05;
 double distance_error = .1;
 double distance_error_small = .00001;
 double slope_error = .01;
@@ -387,13 +388,21 @@ int main(int argc, char **argv)
 					msg.linear.x = 0;
 				}
 			}
-			current_slope = (goal_y-current_pos_y)/(goal_x-current_pos_x);
-			if (goal_x>current_pos_x && current_pos_x> 0 && goal_y>current_pos_y && current_pos_y>0 && slope>=current_slope-slope_error && slope <= current_slope+slope_error)
+			
+			uv = greatest(angles::normalize_angle_positive(goal_theta+angle_pos_error), angles::normalize_angle_positive(goal_theta-angle_pos_error));
+			lv = least(angles::normalize_angle_positive(goal_theta+angle_pos_error), angles::normalize_angle_positive(goal_theta-angle_pos_error));
+			
+			current_pos_theta = atan2(current_pos_y, current_pos_x);
+			current_pos_theta = angles::normalize_angle_positive(current_pos_theta);
+			
+			if (goal_x>current_pos_x && current_pos_x> 0 && goal_y>current_pos_y && current_pos_y>0 && ((uv < current_pos_theta && current_pos_theta <= uv + 2*angle_error) || (lv > current_pos_theta && current_pos_theta > (lv - 2*angle_error))))
 			{
 				testing = false;
 				
 			}
-			ROS_INFO("slope: %f, current slope: %f, current truth: %d", slope, (goal_y-current_pos_y/goal_x-current_pos_x) ,(goal_x>current_pos_x && current_pos_x> 0 && goal_y>current_pos_y && current_pos_y>0 && slope <= ((goal_y-current_pos_y-0)/(goal_x-current_pos_x-0))+slope_error));
+			ROS_INFO("goal_pos_theta: %f, current_pos_theta: %f, uv: %f, lv %f, current truth: %d", goal_theta, current_pos_theta, uv, lv ,((uv < current_pos_theta && current_pos_theta <= uv + 2*angle_error) || (lv > current_pos_theta && current_pos_theta > (lv - 2*angle_error))));
+			
+			
 			ROS_INFO("The state of RESET is: %d", reset);
 						
 		}
