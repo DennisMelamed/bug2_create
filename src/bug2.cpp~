@@ -24,7 +24,7 @@ double rot_vel=.2;
 double drive_speed = .1;
 
 double angle_error = .15;
-double angle_pos_error = .05;
+double angle_pos_error = .009;
 double distance_error = .1;
 double distance_error_small = .00001;
 double slope_error = .01;
@@ -32,6 +32,9 @@ double slope_error = .01;
 double start_x;
 double start_y;
 double start_theta;
+
+double started_test_x;
+double started_test_y;
 
 double robot_radius = 0.16495;
 
@@ -56,6 +59,7 @@ bool initialized = false;
 bool bump_sensor = false;
 bool testing = false;
 bool reset = false;
+bool moved = false;
 
 geometry_msgs::Twist msg;
 
@@ -124,6 +128,8 @@ double least(double a, double b)
 }
 
 
+
+
 int main(int argc, char **argv)
 {
      //Initializes ROS, and sets up a node
@@ -177,6 +183,8 @@ int main(int argc, char **argv)
 			{
 				testing = true;
 				msg.linear.x = 0;
+				started_test_x = current_pos_x;
+				started_test_y = current_pos_y;
 			}
 		}
 
@@ -265,7 +273,7 @@ int main(int argc, char **argv)
 				
 				if(test_distance-distance_error < dist_traveled && dist_traveled <= test_distance+distance_error)
 				{
-					
+					moved = true;
 					count++;					
 					initialized = false;
 					msg.linear.x = 0;
@@ -395,12 +403,13 @@ int main(int argc, char **argv)
 			current_pos_theta = atan2(current_pos_y, current_pos_x);
 			current_pos_theta = angles::normalize_angle_positive(current_pos_theta);
 			
-			if (goal_x>current_pos_x && current_pos_x> 0 && goal_y>current_pos_y && current_pos_y>0 && ((uv < current_pos_theta && current_pos_theta <= uv + 2*angle_error) || (lv > current_pos_theta && current_pos_theta > (lv - 2*angle_error))))
+			if (moved && goal_x>current_pos_x && current_pos_x> 0 && goal_y>current_pos_y && current_pos_y>0 && ((uv < current_pos_theta && current_pos_theta <= uv + 2*angle_pos_error) || (lv > current_pos_theta && current_pos_theta > (lv - 2*angle_pos_error))))
 			{
 				testing = false;
+				moved = false;
 				
 			}
-			ROS_INFO("goal_pos_theta: %f, current_pos_theta: %f, uv: %f, lv %f, current truth: %d", goal_theta, current_pos_theta, uv, lv ,((uv < current_pos_theta && current_pos_theta <= uv + 2*angle_error) || (lv > current_pos_theta && current_pos_theta > (lv - 2*angle_error))));
+			ROS_INFO("goal_pos_theta: %f, current_pos_theta: %f, uv: %f, lv %f, current truth: %d", goal_theta, current_pos_theta, uv, lv ,((uv < current_pos_theta && current_pos_theta <= uv + 2*angle_pos_error) || (lv > current_pos_theta && current_pos_theta > (lv - 2*angle_pos_error))));
 			
 			
 			ROS_INFO("The state of RESET is: %d", reset);
