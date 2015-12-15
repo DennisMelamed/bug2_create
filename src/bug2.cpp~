@@ -39,7 +39,7 @@ double started_test_y;
 double robot_radius = 0.16495;
 
 double test_distance = robot_radius*2;
-double backup_distance = .05;
+double backup_distance = .1;
 
 double dist_traveled_x = 0;
 double dist_traveled_y = 0;
@@ -78,11 +78,7 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr& msg)
    tf::Matrix3x3(quat).getRPY(roll, pitch, current_theta);
    current_theta = angles::normalize_angle_positive(current_theta);
  
-  //ROS_INFO("Seq: [%d]", msg->header.seq);
-   //ROS_INFO("Position-> x: [%f], y: [%f], z: [%f]", msg->pose.pose.position.x,msg->pose.pose.position.y, msg->pose.pose.position.z);
-//   ROS_INFO("Orientation-> x: [%f], y: [%f], z: [%f], w: [%f]", msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z, msg->pose.pose.orientation.w);
-   //ROS_INFO("current_theta: %f", current_theta);
-   //ROS_INFO("Vel-> Linear: [%f], Angular: [%f]", msg->twist.twist.linear.x,msg->twist.twist.angular.z);
+
 }
 
 void bumpCallback(const gazebo_msgs::ContactsState& msg)
@@ -154,7 +150,7 @@ int main(int argc, char **argv)
 
        while(ros::ok())
        {
-       		ROS_INFO("ARE ANY CHANGES BEING RECIEVED?");
+       		
 		if(!testing)
 		{
 			if(!(current_theta <= goal_theta+angle_error && current_theta >= goal_theta-angle_error))	
@@ -180,12 +176,12 @@ int main(int argc, char **argv)
 				ROS_INFO("SPINNING: current theta: %f", current_theta);
 				ROS_INFO("DRIVING: x: %f y: %f, goal_x: %f, goal_y: %f", current_pos_x, current_pos_y, goal_x, goal_y);
 			}
-			else if((current_pos_x <= goal_x+distance_error && current_pos_x >= goal_x-distance_error) || (current_pos_y <= goal_y+distance_error && current_pos_y >= goal_y-distance_error))
+			else if((current_pos_x <= goal_x+distance_error && current_pos_x >= goal_x-distance_error) && (current_pos_y <= goal_y+distance_error && current_pos_y >= goal_y-distance_error))
 			{
 				msg.linear.x = 0;
 //				ROS_INFO("STOPPING");
 			}
-			else if((current_pos_x <= goal_x+distance_error && current_pos_x >= goal_x-distance_error)) //|| (current_pos_y <= goal_y+distance_error && current_pos_y >= goal_y-distance_error))
+			else if((current_pos_x <= goal_x+distance_error && current_pos_x >= goal_x-distance_error) || (current_pos_y <= goal_y+distance_error && current_pos_y >= goal_y-distance_error))
 			{
 				ROS_INFO("RESETTTTTTT");
 				setGoalThetaFromCurrent();
@@ -223,7 +219,7 @@ int main(int argc, char **argv)
 //				ROS_INFO("dist_traveled: %f \n", dist_traveled);
 
 				
-				if(backup_distance-distance_error < dist_traveled && dist_traveled < backup_distance+distance_error)
+				if((backup_distance-distance_error < dist_traveled && dist_traveled < backup_distance+distance_error) || bump_sensor)
 				{
 					count++;					
 					initialized = false;
@@ -342,6 +338,8 @@ int main(int argc, char **argv)
 						initialized = false;
 						reset = false;
 						msg.angular.z = 0;
+						
+						msg.linear.x = 0;
 				}
 				
 				
@@ -369,6 +367,10 @@ int main(int argc, char **argv)
 					initialized = false;
 					reset = false;
 					msg.angular.z = 0;
+				}
+				if(bump_sensor)
+				{
+					msg.linear.x = 0;
 				}	
 			}
 			
@@ -419,8 +421,7 @@ int main(int argc, char **argv)
 			{
 				testing = false;
 				moved = false;
-				goal_theta = atan2((goal_y-current_pos_y),(goal_x-current_pos_x));  
-     				goal_theta = angles::normalize_angle_positive(goal_theta);
+				setGoalThetaFromCurrent();
 				
 			}
 			ROS_INFO("goal_pos_theta: %f, current_pos_theta: %f, uv: %f, lv %f, current truth: %d", goal_theta, 
