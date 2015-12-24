@@ -185,27 +185,25 @@ void not_testing()
 		msg.linear.x  = 0;
 		msg.angular.z = rot_vel;
 
-		ROS_INFO("SPINNING: current theta: %f goal_theta: %f", current_theta, goal_theta);
-		//	ROS_INFO("DRIVING: x: %f y: %f", current_pos_x, current_pos_y);
+		//("SPINNING: current theta: %f goal_theta: %f", current_theta, goal_theta);
 	}
+	//if we aren't at the goal, move to it
 	else if (!(current_pos_x <= goal_x+distance_error && current_pos_x >= goal_x-distance_error) || 
 			!(current_pos_y <= goal_y+distance_error && current_pos_y >= goal_y-distance_error))
 	{
 		msg.linear.x = drive_speed;
 		msg.angular.z = 0;
-		ROS_INFO("SPINNING: current theta: %f", current_theta);
-		ROS_INFO("DRIVING: x: %f y: %f, goal_x: %f, goal_y: %f", current_pos_x, current_pos_y, goal_x, goal_y);
+
+		//("DRIVING: x: %f y: %f, goal_x: %f, goal_y: %f", current_pos_x, current_pos_y, goal_x, goal_y);
 	}
+	
+	//if we're at out goal, stop
 	else if((current_pos_x <= goal_x+distance_error && current_pos_x >= goal_x-distance_error) && (current_pos_y <= goal_y+distance_error && current_pos_y >= goal_y-distance_error))
 	{
 		msg.linear.x = 0;
-		//				ROS_INFO("STOPPING");
-
 	}
-	else if((current_pos_x <= goal_x+distance_error && current_pos_x >= goal_x-distance_error) || (current_pos_y <= goal_y+distance_error && current_pos_y >= goal_y-distance_error))
-	{
-		setGoalThetaFromCurrent();
-	}
+	
+	//if there's been a collision, enter the testing routine
 	if(bump_sensor)
 	{
 		testing = true;
@@ -217,23 +215,23 @@ void not_testing()
 
 void testing_step0()
 {
-	ROS_INFO("STEP 0");
+	//("STEP 0");
 	msg.linear.x = -drive_speed;
 	if(!initialized)
 	{
 		start_x = current_pos_x;
 		start_y = current_pos_y;
-		//					ROS_INFO("x: %f y: %f", start_x, start_y);
+		//					//("x: %f y: %f", start_x, start_y);
 		initialized = true;
 	}
 
 	dist_traveled_x = start_x - current_pos_x;
 	dist_traveled_y = start_y - current_pos_y; 	
-	//				ROS_INFO("current_x: %f current_y: %f", current_pos_x, current_pos_y);
-	//				ROS_INFO("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
+	//				//("current_x: %f current_y: %f", current_pos_x, current_pos_y);
+	//				//("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
 
 	dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);				    
-	//				ROS_INFO("dist_traveled: %f \n", dist_traveled);
+	//				//("dist_traveled: %f \n", dist_traveled);
 
 
 	if((backup_distance-distance_error < dist_traveled && dist_traveled < backup_distance+distance_error) || bump_sensor)
@@ -246,47 +244,50 @@ void testing_step0()
 
 void testing_step1()
 {
-	ROS_INFO("Step 1");
+	
 	msg.angular.z = rot_vel;
 	if(!initialized)
 	{
 		start_theta = current_theta;
 		initialized = true;
-		//					ROS_INFO("start_theta: %f", start_theta);
+		
 	}
 
 	uv = greatest(angles::normalize_angle_positive(start_theta+1.57+angle_error), angles::normalize_angle_positive(start_theta+1.57-angle_error));
 	lv = least(angles::normalize_angle_positive(start_theta+1.57+angle_error), angles::normalize_angle_positive(start_theta+1.57-angle_error));
-
-	ROS_INFO("current_theta: %f, start_theta: %f, boundaries: %f , %f", current_theta, start_theta, lv, uv);
+	if(bump_sensor)
+	{
+		msg.angular.z = 0;
+	}
+	
 	if((uv < current_theta && current_theta <= uv + 2*angle_error) || (lv > current_theta && current_theta > (lv - 2*angle_error)))
 	{
 		count++;
 		initialized = false;
 		msg.angular.z = 0;
-		//ROS_INFO("STOPPING STEP 1");
+
 	}
 }
 
 void testing_step2()
 {
-	ROS_INFO("STEP 2");
+	//("STEP 2");
 	msg.linear.x = drive_speed;
 	if(!initialized)
 	{
 		start_x = current_pos_x;
 		start_y = current_pos_y;
-		//					ROS_INFO("x: %f y: %f", start_x, start_y);
+		//					//("x: %f y: %f", start_x, start_y);
 		initialized = true;
 	}
 
 	dist_traveled_x = start_x - current_pos_x;
 	dist_traveled_y = start_y - current_pos_y; 	
-	//				ROS_INFO("current_x: %f current_y: %f", current_pos_x, current_pos_y);
-	//				ROS_INFO("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
+	//				//("current_x: %f current_y: %f", current_pos_x, current_pos_y);
+	//				//("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
 
 	dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);				    
-	//				ROS_INFO("dist_traveled: %f \n", dist_traveled);
+	//				//("dist_traveled: %f \n", dist_traveled);
 
 	if(bump_sensor)
 	{
@@ -306,7 +307,7 @@ void testing_step2()
 
 void testing_step3()
 {
-	ROS_INFO("Step 3");
+	//("Step 3");
 	msg.angular.z = -rot_vel;
 	if(!initialized)
 	{
@@ -316,24 +317,24 @@ void testing_step3()
 	uv = greatest(angles::normalize_angle_positive(start_theta-1.57+angle_error), angles::normalize_angle_positive(start_theta-1.57-angle_error));
 	lv = least(angles::normalize_angle_positive(start_theta-1.57+angle_error), angles::normalize_angle_positive(start_theta-1.57-angle_error));
 
-	ROS_INFO("current_theta: %f, start_theta: %f, boundaries: %f , %f", current_theta, start_theta, lv, uv);
+	//("current_theta: %f, start_theta: %f, boundaries: %f , %f", current_theta, start_theta, lv, uv);
 	if((uv < current_theta && current_theta <= uv + 2*angle_error) || (lv > current_theta && current_theta > (lv - 2*angle_error)))
 	{
 		count++;
 		initialized = false;
 		msg.angular.z = 0;
-		//					ROS_INFO("we've hit this spin back step (3)");
+		
 	}
 }
 
 void testing_step4()
 {
-	ROS_INFO("step 4...");	
+	//("step 4...");	
 	if(!initialized)
 	{
 		start_x = current_pos_x;
 		start_y = current_pos_y;
-		//					ROS_INFO("x: %f y: %f", start_x, start_y);
+		//					//("x: %f y: %f", start_x, start_y);
 		initialized = true;
 		forward = drive_speed;
 		rot = 0;
@@ -345,11 +346,11 @@ void testing_step4()
 	msg.angular.z = rot;
 	dist_traveled_x = start_x - current_pos_x;
 	dist_traveled_y = start_y - current_pos_y; 	
-	//ROS_INFO("current_x: %f current_y: %f", current_pos_x, current_pos_y);
-	//ROS_INFO("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
+	////("current_x: %f current_y: %f", current_pos_x, current_pos_y);
+	////("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
 
 	dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);				    
-	//ROS_INFO("dist_traveled: %f \n", dist_traveled);
+	////("dist_traveled: %f \n", dist_traveled);
 
 	if(bump_sensor && !reset)
 	{
@@ -379,7 +380,7 @@ void testing_step4()
 	uv = greatest(angles::normalize_angle_positive(start_theta-1.57+angle_error), angles::normalize_angle_positive(start_theta-1.57-angle_error));
 	lv = least(angles::normalize_angle_positive(start_theta-1.57+angle_error), angles::normalize_angle_positive(start_theta-1.57-angle_error));
 
-	ROS_INFO("current_theta: %f, start_theta: %f, boundaries: %f , %f", current_theta, start_theta, lv, uv);
+	//("current_theta: %f, start_theta: %f, boundaries: %f , %f", current_theta, start_theta, lv, uv);
 	if((uv < current_theta && current_theta <= uv + 2*angle_error) || (lv > current_theta && current_theta > (lv - 2*angle_error)))
 	{
 		count++;
@@ -391,23 +392,23 @@ void testing_step4()
 
 void testing_step5()
 {
-	ROS_INFO("STEP 5");
+	//("STEP 5");
 	msg.linear.x = drive_speed;
 	if(!initialized)
 	{
 		start_x = current_pos_x;
 		start_y = current_pos_y;
-		//					ROS_INFO("x: %f y: %f", start_x, start_y);
+		//					//("x: %f y: %f", start_x, start_y);
 		initialized = true;
 	}
 
 	dist_traveled_x = start_x - current_pos_x;
 	dist_traveled_y = start_y - current_pos_y; 	
-	//				ROS_INFO("current_x: %f current_y: %f", current_pos_x, current_pos_y);
-	//				ROS_INFO("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
+	//				//("current_x: %f current_y: %f", current_pos_x, current_pos_y);
+	//				//("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
 
 	dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);				    
-	//				ROS_INFO("dist_traveled: %f \n", dist_traveled);
+	//				//("dist_traveled: %f \n", dist_traveled);
 
 	if(bump_sensor)
 	{
@@ -425,59 +426,72 @@ void testing_step5()
 	}
 }
 
+//bool m_line()
+//{
+//	uv = greatest(angles::normalize_angle_positive(goal_theta+angle_pos_error), angles::normalize_angle_positive(goal_theta-angle_pos_error));
+//	lv = least(angles::normalize_angle_positive(goal_theta+angle_pos_error), angles::normalize_angle_positive(goal_theta-angle_pos_error));
+//	return ();
+//}
+
+//dispatcher for the various testing routine steps, also checks to if we've regained the m-line
 void tester(int step_number)
 {
 	if(step_number == 0)
 	{
+		ROS_INFO("step0");
 		testing_step0();
-
 	}
 
 	else if(step_number ==1)
 	{
+		ROS_INFO("step1");
 		testing_step1();			
 	}
 
 	else if(step_number == 2)
 	{
+		ROS_INFO("step2");
 		testing_step2();
 	}
 
 	else if(step_number ==3)
 	{
+		ROS_INFO("step3");
 		testing_step3();		
 	}
 
 	else if(step_number == 4)
 	{
+		ROS_INFO("step4");
 		testing_step4();		
 	}
 
-	if(step_number == 5)
+	else if(step_number == 5)
 	{
+		ROS_INFO("step5");
 		testing_step5();
 	}
 
+	//have we regained the m-line?
 	uv = greatest(angles::normalize_angle_positive(goal_theta+angle_pos_error), angles::normalize_angle_positive(goal_theta-angle_pos_error));
 	lv = least(angles::normalize_angle_positive(goal_theta+angle_pos_error), angles::normalize_angle_positive(goal_theta-angle_pos_error));
 
 	current_pos_theta = atan2(current_pos_y, current_pos_x);
 	current_pos_theta = angles::normalize_angle_positive(current_pos_theta);
 
-	if (moved && goal_x>current_pos_x && current_pos_x> 0 && goal_y>current_pos_y && current_pos_y>0 &&
+	if (moved && abs(goal_x)>abs(current_pos_x) && abs(current_pos_x)> 0 && abs(goal_y)>abs(current_pos_y) && abs(current_pos_y)>0 &&
 			((uv < current_pos_theta && current_pos_theta <= uv + 2*angle_pos_error) || (lv > current_pos_theta && current_pos_theta > (lv - 2*angle_pos_error))))
 	{
 		testing = false;
 		moved = false;
 		setGoalThetaFromCurrent();
-
 	}
-	ROS_INFO("goal_pos_theta: %f, current_pos_theta: %f, uv: %f, lv %f, current truth: %d", goal_theta, 
-			current_pos_theta, uv, lv ,((uv < current_pos_theta && current_pos_theta <= uv + 2*angle_pos_error) || 
-					(lv > current_pos_theta && current_pos_theta > (lv - 2*angle_pos_error))));
-
-
-	ROS_INFO("The state of RESET is: %d", reset);
+	
+	//some extra debugging info, to be removed
+	//("goal_pos_theta: %f, current_pos_theta: %f, uv: %f, lv %f, current truth: %d", goal_theta, 
+			//current_pos_theta, uv, lv ,((uv < current_pos_theta && current_pos_theta <= uv + 2*angle_pos_error) || 
+				//	(lv > current_pos_theta && current_pos_theta > (lv - 2*angle_pos_error))));
+	//("The state of RESET is: %d", reset);
 }
 
 int main(int argc, char **argv)
@@ -486,27 +500,30 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "create");
 	ros::NodeHandle nh;
 
-	//Ceates the publisher, and tells it to publish
+	//Creates the publisher, and tells it to publish
 	//to the /cmd_vel topic, with a queue size of 100
 	ros::Publisher pub=nh.advertise<geometry_msgs::Twist>("/cmd_vel", 100);
+	//Creates Subscribers to the odometry and contact sensor topics
 	ros::Subscriber odom =nh.subscribe("odom", 100, odomCallback);
 	ros::Subscriber bump =nh.subscribe("base_bumper", 100, bumpCallback);
 	ros::Rate rate(10);
 
-	//stores the m-line for bug 2 algorithm
+
 	setGoalThetaFromCurrent();	  
-	//    goal_theta = atan2((goal_y-current_pos_y),(goal_x-current_pos_x));  
-	//     goal_theta = angles::normalize_angle_positive(goal_theta);
+
 
 	while(ros::ok())
 	{
+		//safety, keeps odometry as accurate as possible (gets thrown off if the robot is driven into a wall- it doesn't move but the encoders read a change)
 		if(bump_sensor)
 		{
 			msg.linear.x = 0;
 		}
-
+		ROS_INFO("current_pos: (%f,%f), goal_pos: (%f,%f), current_theta/goal_theta: (%f/%f), current_pos_theta/goal_pos_theta: (%f/%f), moved: %d, testing: %d, bump_sensor: %d", current_pos_x,
+					current_pos_y, goal_x, goal_y, current_theta, goal_theta, current_pos_theta, goal_theta, moved, testing, bump_sensor);
 		if(!testing)
 		{
+			
 			not_testing();
 		}
 
@@ -514,7 +531,7 @@ int main(int argc, char **argv)
 		{
 			tester(count%steps);			
 		}
-
+		//safety, keeps odometry as accurate as possible (gets thrown off if the robot is driven into a wall- it doesn't move but the encoders read a change)
 		if(bump_sensor)
 		{
 			msg.linear.x = 0;
