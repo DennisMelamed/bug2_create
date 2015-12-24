@@ -60,8 +60,8 @@ double current_pos_theta;
 //holds goal states for various parts of the algorithm
 
 //overall position goal
-double goal_x = 1;
-double goal_y = 4;
+double goal_x = -1;
+double goal_y = -4;
 //used when the robot is spinning in place to describe the desired end orientation
 double goal_theta;
 
@@ -176,14 +176,51 @@ void setGoalThetaFromCurrent()
 	goal_theta = angles::normalize_angle_positive(goal_theta);
 }
 
+void drive(bool x) //true for forward, false for backwards
+{
+	if(x)
+	{
+		msg.linear.x = drive_speed;
+		msg.angular.z = 0;
+	}
+	else
+	{
+		msg.linear.x = -drive_speed;
+		msg.angular.z = 0;
+	}
+}
+
+void rotate(bool x) //true for counterclockwise, false for clockwise
+{
+	if (x)
+	{
+		msg.linear.x = 0;
+		msg.angular.z = rot_vel;
+	}
+	else
+	{
+		msg.linear.x = 0;
+		msg.angular.z = -rot_vel;
+	}
+}
+
+void stopDrive()
+{
+	msg.linear.x = 0;
+}
+
+void stopRotate()
+{
+	msg.angular.z = 0;
+}
+
 //actions that occur if the robot is just moving towards the goal and is not testing
 void not_testing()
 {
 	//if the robot isn't pointing the right direction
 	if(!(current_theta <= goal_theta+angle_error && current_theta >= goal_theta-angle_error))	
 	{
-		msg.linear.x  = 0;
-		msg.angular.z = rot_vel;
+		rotate(true);
 
 		//("SPINNING: current theta: %f goal_theta: %f", current_theta, goal_theta);
 	}
@@ -191,8 +228,7 @@ void not_testing()
 	else if (!(current_pos_x <= goal_x+distance_error && current_pos_x >= goal_x-distance_error) || 
 			!(current_pos_y <= goal_y+distance_error && current_pos_y >= goal_y-distance_error))
 	{
-		msg.linear.x = drive_speed;
-		msg.angular.z = 0;
+		drive(true);
 
 		//("DRIVING: x: %f y: %f, goal_x: %f, goal_y: %f", current_pos_x, current_pos_y, goal_x, goal_y);
 	}
@@ -200,52 +236,47 @@ void not_testing()
 	//if we're at out goal, stop
 	else if((current_pos_x <= goal_x+distance_error && current_pos_x >= goal_x-distance_error) && (current_pos_y <= goal_y+distance_error && current_pos_y >= goal_y-distance_error))
 	{
-		msg.linear.x = 0;
+		stopDrive();
 	}
 	
 	//if there's been a collision, enter the testing routine
 	if(bump_sensor)
 	{
-		testing = true;
-		msg.linear.x = 0;
+		stopDrive();
 		started_test_x = current_pos_x;
 		started_test_y = current_pos_y;
+		testing = true;
 	}
 }
 
 void testing_step0()
 {
 	//("STEP 0");
-	msg.linear.x = -drive_speed;
+	drive(false);
+	
 	if(!initialized)
 	{
 		start_x = current_pos_x;
 		start_y = current_pos_y;
-		//					//("x: %f y: %f", start_x, start_y);
 		initialized = true;
 	}
 
 	dist_traveled_x = start_x - current_pos_x;
 	dist_traveled_y = start_y - current_pos_y; 	
-	//				//("current_x: %f current_y: %f", current_pos_x, current_pos_y);
-	//				//("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
-
 	dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);				    
-	//				//("dist_traveled: %f \n", dist_traveled);
-
 
 	if((backup_distance-distance_error < dist_traveled && dist_traveled < backup_distance+distance_error) || bump_sensor)
 	{
 		count++;					
 		initialized = false;
-		msg.linear.x = 0;
+		stopDrive();
 	}
 }
 
 void testing_step1()
 {
 	
-	msg.angular.z = rot_vel;
+	rotate(true);
 	if(!initialized)
 	{
 		start_theta = current_theta;
@@ -255,16 +286,13 @@ void testing_step1()
 
 	uv = greatest(angles::normalize_angle_positive(start_theta+1.57+angle_error), angles::normalize_angle_positive(start_theta+1.57-angle_error));
 	lv = least(angles::normalize_angle_positive(start_theta+1.57+angle_error), angles::normalize_angle_positive(start_theta+1.57-angle_error));
-	if(bump_sensor)
-	{
-		msg.angular.z = 0;
-	}
+	
 	
 	if((uv < current_theta && current_theta <= uv + 2*angle_error) || (lv > current_theta && current_theta > (lv - 2*angle_error)))
 	{
 		count++;
 		initialized = false;
-		msg.angular.z = 0;
+		stopRotate();
 
 	}
 }
@@ -272,7 +300,7 @@ void testing_step1()
 void testing_step2()
 {
 	//("STEP 2");
-	msg.linear.x = drive_speed;
+	drive(true);
 	if(!initialized)
 	{
 		start_x = current_pos_x;
@@ -291,9 +319,9 @@ void testing_step2()
 
 	if(bump_sensor)
 	{
-		count = 0;
-		msg.linear.x = 0;
+		stopDrive();
 		initialized = false;
+		count = 0;
 	}
 
 	if(test_distance-distance_error < dist_traveled && dist_traveled <= test_distance+distance_error)
@@ -301,14 +329,14 @@ void testing_step2()
 		moved = true;
 		count++;					
 		initialized = false;
-		msg.linear.x = 0;
+		stopDrive();
 	}
 }
 
 void testing_step3()
 {
-	//("Step 3");
-	msg.angular.z = -rot_vel;
+
+	rotate(false);
 	if(!initialized)
 	{
 		start_theta = current_theta;
@@ -317,24 +345,23 @@ void testing_step3()
 	uv = greatest(angles::normalize_angle_positive(start_theta-1.57+angle_error), angles::normalize_angle_positive(start_theta-1.57-angle_error));
 	lv = least(angles::normalize_angle_positive(start_theta-1.57+angle_error), angles::normalize_angle_positive(start_theta-1.57-angle_error));
 
-	//("current_theta: %f, start_theta: %f, boundaries: %f , %f", current_theta, start_theta, lv, uv);
+
 	if((uv < current_theta && current_theta <= uv + 2*angle_error) || (lv > current_theta && current_theta > (lv - 2*angle_error)))
 	{
 		count++;
 		initialized = false;
-		msg.angular.z = 0;
-		
+		stopRotate();
 	}
 }
 
 void testing_step4()
 {
-	//("step 4...");	
+	
 	if(!initialized)
 	{
 		start_x = current_pos_x;
 		start_y = current_pos_y;
-		//					//("x: %f y: %f", start_x, start_y);
+
 		initialized = true;
 		forward = drive_speed;
 		rot = 0;
@@ -342,24 +369,23 @@ void testing_step4()
 		start_theta = current_theta;
 	}
 
-	msg.linear.x = forward;
+	msg.linear.x = forward; //these steps are a bit different due to the possibility of having gone off an object edge, so we don't use the drive() or rotate() methods
 	msg.angular.z = rot;
 	dist_traveled_x = start_x - current_pos_x;
 	dist_traveled_y = start_y - current_pos_y; 	
-	////("current_x: %f current_y: %f", current_pos_x, current_pos_y);
-	////("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
+
 
 	dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);				    
-	////("dist_traveled: %f \n", dist_traveled);
+
 
 	if(bump_sensor && !reset)
 	{
 		count=0;
 		initialized = false;
 		reset = false;
-		msg.angular.z = 0;
+		stopRotate();
 
-		msg.linear.x = 0;
+		stopDrive();
 	}
 
 
@@ -386,14 +412,14 @@ void testing_step4()
 		count++;
 		initialized = false;
 		reset = false;
-		msg.angular.z = 0;
+		stopRotate();
 	}
 }
 
 void testing_step5()
 {
 	//("STEP 5");
-	msg.linear.x = drive_speed;
+	drive(true);
 	if(!initialized)
 	{
 		start_x = current_pos_x;
@@ -412,9 +438,9 @@ void testing_step5()
 
 	if(bump_sensor)
 	{
-		count = 0;
-		msg.linear.x = 0;
+		stopDrive();
 		initialized = false;
+		count = 0;
 	}
 
 	if(test_distance-distance_error < dist_traveled && dist_traveled <= test_distance+distance_error)
@@ -422,7 +448,7 @@ void testing_step5()
 
 		count++;					
 		initialized = false;
-		msg.linear.x = 0;
+		stopDrive();
 	}
 }
 
@@ -479,7 +505,7 @@ void tester(int step_number)
 	current_pos_theta = atan2(current_pos_y, current_pos_x);
 	current_pos_theta = angles::normalize_angle_positive(current_pos_theta);
 
-	if (moved && abs(goal_x)>abs(current_pos_x) && abs(current_pos_x)> 0 && abs(goal_y)>abs(current_pos_y) && abs(current_pos_y)>0 &&
+	if (moved && fabs(goal_x)>fabs(current_pos_x) && fabs(current_pos_x)> 0 && fabs(goal_y)>fabs(current_pos_y) && fabs(current_pos_y)>0 &&
 			((uv < current_pos_theta && current_pos_theta <= uv + 2*angle_pos_error) || (lv > current_pos_theta && current_pos_theta > (lv - 2*angle_pos_error))))
 	{
 		testing = false;
@@ -487,11 +513,7 @@ void tester(int step_number)
 		setGoalThetaFromCurrent();
 	}
 	
-	//some extra debugging info, to be removed
-	//("goal_pos_theta: %f, current_pos_theta: %f, uv: %f, lv %f, current truth: %d", goal_theta, 
-			//current_pos_theta, uv, lv ,((uv < current_pos_theta && current_pos_theta <= uv + 2*angle_pos_error) || 
-				//	(lv > current_pos_theta && current_pos_theta > (lv - 2*angle_pos_error))));
-	//("The state of RESET is: %d", reset);
+
 }
 
 int main(int argc, char **argv)
@@ -517,7 +539,7 @@ int main(int argc, char **argv)
 		//safety, keeps odometry as accurate as possible (gets thrown off if the robot is driven into a wall- it doesn't move but the encoders read a change)
 		if(bump_sensor)
 		{
-			msg.linear.x = 0;
+			stopDrive();
 		}
 		ROS_INFO("current_pos: (%f,%f), goal_pos: (%f,%f), current_theta/goal_theta: (%f/%f), current_pos_theta/goal_pos_theta: (%f/%f), moved: %d, testing: %d, bump_sensor: %d", current_pos_x,
 					current_pos_y, goal_x, goal_y, current_theta, goal_theta, current_pos_theta, goal_theta, moved, testing, bump_sensor);
@@ -534,7 +556,7 @@ int main(int argc, char **argv)
 		//safety, keeps odometry as accurate as possible (gets thrown off if the robot is driven into a wall- it doesn't move but the encoders read a change)
 		if(bump_sensor)
 		{
-			msg.linear.x = 0;
+			stopDrive();
 		}		
 
 		//Publish the message
