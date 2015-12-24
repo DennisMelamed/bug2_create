@@ -1,16 +1,19 @@
 /*
- * Title: Contact Sensor Based Algorithm for iRobot Create Navigation Around Obstacles to Goal States
+ * Title: Contact Sensor Based Implementation of iRobot Create Navigation Around Obstacles to Goal Postions
  * Author: Dennis Melamed (University of Minnesota)
  * 
  * Based off of the pathfinding algorithm know as "Bug 2." 
+ * A more complete explanation with visuals (by Howie Choset at Carnegie Mellon University) can be found here: 
+ * http://www.cs.cmu.edu/~motionplanning/lecture/Chap2-Bug-Alg_howie.pdf
+ * 
  * 
  * Overall Process:
  * -Calculate shortest distance to target, record the angle from the target to a zero angle position (this describes the line to the target, aka the "m-line")
- * -Drive forward until the target is reached or a collision is detected
+ * -Drive along the m-line until the target is reached or a collision is detected
  * -If a collision is detected, follow the edge of the object collided against clockwise until the m-line is regained
  * -Continue driving towards target following the m-line, repeat object circumnavigation as required until target reached.
  * 
- * Overall Process:
+ * More Detailed Flow:
  * -An angle to the goal position is found and rotated to
  * -The robot moves forward until a collision is detected or the goal position is reached
  * -if a collision is detected:
@@ -23,7 +26,13 @@
  * 		-if a collision is detected:
  * 			- the above process repeats itself until a collision is not detected
  * 		-if there is no collision after a certain distance:
- * 			- this indicates the robot has gone off an edge	
+ * 			- this indicates the robot has gone off an edge of the obstacle
+ * 			-The robot drives forward an additional robot-length,
+ * 			-rotates 90 degrees clockwise
+ * 			-drives forward a robot-lenght
+ * 			-begins testing again as though a collision had just been detected
+ * 		-Once the robot is at the same angle from the origin as the goal position is, the m-line has been regained
+ * 		-The robot rotates to face the goal position and begins driving toward it again
  * 			
  *
  */
@@ -107,37 +116,32 @@ geometry_msgs::Twist msg;
 
 void odomCallback(const nav_msgs::Odometry::ConstPtr& msg)
 {
-
+	//xy positions
 	current_pos_x = msg->pose.pose.position.x;
 	current_pos_y = msg->pose.pose.position.y;
 
-
+	//orientation
 	tf::Quaternion quat;
 	tf::quaternionMsgToTF(msg->pose.pose.orientation, quat);
 	double roll;
 	double pitch;
 	tf::Matrix3x3(quat).getRPY(roll, pitch, current_theta);
 	current_theta = angles::normalize_angle_positive(current_theta);
-
-
 }
 
 void bumpCallback(const gazebo_msgs::ContactsState& msg)
 {
-
 	if(!msg.states.empty())
 	{
-
 		bump_sensor = true;
-		//		ROS_INFO("bump detected");
 	}
 	else
 	{
 		bump_sensor = false;
-		//	ROS_INFO("no contact");
 	}
 }
 
+//returns the larger of the two passed doubles
 double greatest(double a, double b)
 {
 	if(a>b)
@@ -151,6 +155,7 @@ double greatest(double a, double b)
 	return 0;
 }
 
+//returns the smallest of the two passed doubles
 double least(double a, double b)
 {
 	if(a<b)
@@ -164,25 +169,21 @@ double least(double a, double b)
 	return 0;
 }
 
+//sets the robot's goal theta to point at the goal position
 void setGoalThetaFromCurrent()
 {
 	goal_theta = atan2((goal_y-current_pos_y),(goal_x-current_pos_x));  
 	goal_theta = angles::normalize_angle_positive(goal_theta);
 }
 
+//actions that occur if the robot is just moving towards the goal and is not testing
 void not_testing()
 {
+	//if the robot isn't pointing the right direction
 	if(!(current_theta <= goal_theta+angle_error && current_theta >= goal_theta-angle_error))	
 	{
 		msg.linear.x  = 0;
-		//		if(current_theta < goal_theta)
-		//		{
 		msg.angular.z = rot_vel;
-		//		}
-		//		if(current_theta > goal_theta)
-		//		{
-		//			msg.angular.z = -rot_vel;
-		//		}
 
 		ROS_INFO("SPINNING: current theta: %f goal_theta: %f", current_theta, goal_theta);
 		//	ROS_INFO("DRIVING: x: %f y: %f", current_pos_x, current_pos_y);
