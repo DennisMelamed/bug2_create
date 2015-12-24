@@ -129,35 +129,9 @@ void setGoalThetaFromCurrent()
      goal_theta = angles::normalize_angle_positive(goal_theta);
 }
 
-
-int main(int argc, char **argv)
+void not_testing()
 {
-     //Initializes ROS, and sets up a node
-     ros::init(argc, argv, "create");
-     ros::NodeHandle nh;
-
-     //Ceates the publisher, and tells it to publish
-     //to the /cmd_vel topic, with a queue size of 100
-     ros::Publisher pub=nh.advertise<geometry_msgs::Twist>("/cmd_vel", 100);
-     ros::Subscriber odom =nh.subscribe("odom", 100, odomCallback);
-     ros::Subscriber bump =nh.subscribe("base_bumper", 100, bumpCallback);
-     ros::Rate rate(10);
-     
-	//stores the m-line for bug 2 algorithm
-  setGoalThetaFromCurrent();	  
-//    goal_theta = atan2((goal_y-current_pos_y),(goal_x-current_pos_x));  
-//     goal_theta = angles::normalize_angle_positive(goal_theta);
-
-       while(ros::ok())
-       {
-       		if(bump_sensor)
-		{
-			msg.linear.x = 0;
-		}
-       		
-		if(!testing)
-		{
-			if(!(current_theta <= goal_theta+angle_error && current_theta >= goal_theta-angle_error))	
+	if(!(current_theta <= goal_theta+angle_error && current_theta >= goal_theta-angle_error))	
 			{
 				msg.linear.x  = 0;
 		//		if(current_theta < goal_theta)
@@ -197,14 +171,11 @@ int main(int argc, char **argv)
 				started_test_x = current_pos_x;
 				started_test_y = current_pos_y;
 			}
-		}
+}
 
-
-		if(testing)
-		{
-			if(count%steps == 0)
-			{
-				ROS_INFO("STEP 0");
+void testing_step0()
+{
+	ROS_INFO("STEP 0");
 				msg.linear.x = -drive_speed;
 				if(!initialized)
 				{
@@ -229,11 +200,11 @@ int main(int argc, char **argv)
 					initialized = false;
 					msg.linear.x = 0;
 				}
-			}
+}
 
-			else if(count%steps ==1)
-			{
-				ROS_INFO("Step 1");
+void testing_step1()
+{
+	ROS_INFO("Step 1");
 				msg.angular.z = rot_vel;
 				if(!initialized)
 				{
@@ -253,11 +224,11 @@ int main(int argc, char **argv)
 					msg.angular.z = 0;
 					//ROS_INFO("STOPPING STEP 1");
 				}
-			}
-			
-			else if(count%steps == 2)
-			{
-				ROS_INFO("STEP 2");
+}
+
+void testing_step2()
+{
+	ROS_INFO("STEP 2");
 				msg.linear.x = drive_speed;
 				if(!initialized)
 				{
@@ -289,10 +260,11 @@ int main(int argc, char **argv)
 					initialized = false;
 					msg.linear.x = 0;
 				}
-			}
-			else if(count%steps ==3)
-			{
-				ROS_INFO("Step 3");
+}
+
+void testing_step3()
+{
+	ROS_INFO("Step 3");
 				msg.angular.z = -rot_vel;
 				if(!initialized)
 				{
@@ -310,10 +282,11 @@ int main(int argc, char **argv)
 					msg.angular.z = 0;
 //					ROS_INFO("we've hit this spin back step (3)");
 				}
-			}
-			else if(count%steps == 4)
-			{
-				ROS_INFO("step 4...");	
+}
+
+void testing_step4()
+{
+	ROS_INFO("step 4...");	
 				if(!initialized)
 				{
 					start_x = current_pos_x;
@@ -372,12 +345,11 @@ int main(int argc, char **argv)
 					reset = false;
 					msg.angular.z = 0;
 				}
-					
-			}
-			
-			if(count%steps == 5)
-			{
-				ROS_INFO("STEP 5");
+}
+
+void testing_step5()
+{
+	ROS_INFO("STEP 5");
 				msg.linear.x = drive_speed;
 				if(!initialized)
 				{
@@ -409,31 +381,102 @@ int main(int argc, char **argv)
 					initialized = false;
 					msg.linear.x = 0;
 				}
-			}
-			
-			uv = greatest(angles::normalize_angle_positive(goal_theta+angle_pos_error), angles::normalize_angle_positive(goal_theta-angle_pos_error));
-			lv = least(angles::normalize_angle_positive(goal_theta+angle_pos_error), angles::normalize_angle_positive(goal_theta-angle_pos_error));
-			
-			current_pos_theta = atan2(current_pos_y, current_pos_x);
-			current_pos_theta = angles::normalize_angle_positive(current_pos_theta);
-			
-			if (moved && goal_x>current_pos_x && current_pos_x> 0 && goal_y>current_pos_y && current_pos_y>0 &&
-				 ((uv < current_pos_theta && current_pos_theta <= uv + 2*angle_pos_error) || (lv > current_pos_theta && current_pos_theta > (lv - 2*angle_pos_error))))
-			{
-				testing = false;
-				moved = false;
-				setGoalThetaFromCurrent();
+}
+
+void tester(int step_number)
+{
+	if(step_number == 0)
+	{
+		testing_step0();
 				
-			}
-			ROS_INFO("goal_pos_theta: %f, current_pos_theta: %f, uv: %f, lv %f, current truth: %d", goal_theta, 
-				current_pos_theta, uv, lv ,((uv < current_pos_theta && current_pos_theta <= uv + 2*angle_pos_error) || 
-				(lv > current_pos_theta && current_pos_theta > (lv - 2*angle_pos_error))));
+	}
+
+	else if(step_number ==1)
+	{
+		testing_step1();			
+	}
+			
+	else if(step_number == 2)
+	{
+		testing_step2();
+	}
+	
+	else if(step_number ==3)
+	{
+		testing_step3();		
+	}
+	
+	else if(step_number == 4)
+	{
+		testing_step4();		
+	}
+			
+	if(step_number == 5)
+	{
+		testing_step5();
+	}
+			
+	uv = greatest(angles::normalize_angle_positive(goal_theta+angle_pos_error), angles::normalize_angle_positive(goal_theta-angle_pos_error));
+	lv = least(angles::normalize_angle_positive(goal_theta+angle_pos_error), angles::normalize_angle_positive(goal_theta-angle_pos_error));
+			
+	current_pos_theta = atan2(current_pos_y, current_pos_x);
+	current_pos_theta = angles::normalize_angle_positive(current_pos_theta);
+			
+	if (moved && goal_x>current_pos_x && current_pos_x> 0 && goal_y>current_pos_y && current_pos_y>0 &&
+		((uv < current_pos_theta && current_pos_theta <= uv + 2*angle_pos_error) || (lv > current_pos_theta && current_pos_theta > (lv - 2*angle_pos_error))))
+	{
+		testing = false;
+		moved = false;
+		setGoalThetaFromCurrent();
+				
+	}
+	ROS_INFO("goal_pos_theta: %f, current_pos_theta: %f, uv: %f, lv %f, current truth: %d", goal_theta, 
+		current_pos_theta, uv, lv ,((uv < current_pos_theta && current_pos_theta <= uv + 2*angle_pos_error) || 
+		(lv > current_pos_theta && current_pos_theta > (lv - 2*angle_pos_error))));
 			
 			
-			ROS_INFO("The state of RESET is: %d", reset);
-						
+	ROS_INFO("The state of RESET is: %d", reset);
+}
+
+int main(int argc, char **argv)
+{
+     //Initializes ROS, and sets up a node
+     ros::init(argc, argv, "create");
+     ros::NodeHandle nh;
+
+     //Ceates the publisher, and tells it to publish
+     //to the /cmd_vel topic, with a queue size of 100
+     ros::Publisher pub=nh.advertise<geometry_msgs::Twist>("/cmd_vel", 100);
+     ros::Subscriber odom =nh.subscribe("odom", 100, odomCallback);
+     ros::Subscriber bump =nh.subscribe("base_bumper", 100, bumpCallback);
+     ros::Rate rate(10);
+     
+	//stores the m-line for bug 2 algorithm
+  setGoalThetaFromCurrent();	  
+//    goal_theta = atan2((goal_y-current_pos_y),(goal_x-current_pos_x));  
+//     goal_theta = angles::normalize_angle_positive(goal_theta);
+
+       while(ros::ok())
+       {
+       		if(bump_sensor)
+		{
+			msg.linear.x = 0;
+		}
+       		
+		if(!testing)
+		{
+			not_testing();
+		}
+
+		if(testing)
+		{
+			tester(count%steps);			
 		}
 		
+		if(bump_sensor)
+		{
+			msg.linear.x = 0;
+		}		
 
            //Publish the message
            pub.publish(msg);

@@ -150,6 +150,10 @@ int main(int argc, char **argv)
 
        while(ros::ok())
        {
+       		if(bump_sensor)
+		{
+			msg.linear.x = 0;
+		}
        		
 		if(!testing)
 		{
@@ -180,10 +184,10 @@ int main(int argc, char **argv)
 			{
 				msg.linear.x = 0;
 //				ROS_INFO("STOPPING");
+				
 			}
 			else if((current_pos_x <= goal_x+distance_error && current_pos_x >= goal_x-distance_error) || (current_pos_y <= goal_y+distance_error && current_pos_y >= goal_y-distance_error))
 			{
-				ROS_INFO("RESETTTTTTT");
 				setGoalThetaFromCurrent();
 			}
 			if(bump_sensor)
@@ -368,10 +372,7 @@ int main(int argc, char **argv)
 					reset = false;
 					msg.angular.z = 0;
 				}
-				if(bump_sensor)
-				{
-					msg.linear.x = 0;
-				}	
+					
 			}
 			
 			if(count%steps == 5)
