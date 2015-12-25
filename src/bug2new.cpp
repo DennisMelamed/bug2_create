@@ -1,6 +1,6 @@
 /*
  * Title: Contact Sensor Based Implementation of iRobot Create Navigation Around Obstacles to Goal Postions
- * Author: Dennis Melamed (University of Minnesota)
+ * Author: Dennis Melamed
  * 
  * Based off of the pathfinding algorithm know as "Bug 2." 
  * A more complete explanation with visuals (by Howie Choset at Carnegie Mellon University) can be found here: 
@@ -60,8 +60,8 @@ double current_pos_theta;
 //holds goal states for various parts of the algorithm
 
 //overall position goal
-double goal_x = -1;
-double goal_y = -4;
+double goal_x = 1;
+double goal_y = 4;
 //used when the robot is spinning in place to describe the desired end orientation
 double goal_theta;
 
@@ -221,16 +221,12 @@ void not_testing()
 	if(!(current_theta <= goal_theta+angle_error && current_theta >= goal_theta-angle_error))	
 	{
 		rotate(true);
-
-		//("SPINNING: current theta: %f goal_theta: %f", current_theta, goal_theta);
 	}
 	//if we aren't at the goal, move to it
 	else if (!(current_pos_x <= goal_x+distance_error && current_pos_x >= goal_x-distance_error) || 
 			!(current_pos_y <= goal_y+distance_error && current_pos_y >= goal_y-distance_error))
 	{
 		drive(true);
-
-		//("DRIVING: x: %f y: %f, goal_x: %f, goal_y: %f", current_pos_x, current_pos_y, goal_x, goal_y);
 	}
 	
 	//if we're at out goal, stop
@@ -249,9 +245,9 @@ void not_testing()
 	}
 }
 
+//drive back (away from the obstacle) a little bit
 void testing_step0()
 {
-	//("STEP 0");
 	drive(false);
 	
 	if(!initialized)
@@ -273,6 +269,7 @@ void testing_step0()
 	}
 }
 
+//Rotate 90 degrees
 void testing_step1()
 {
 	
@@ -281,41 +278,34 @@ void testing_step1()
 	{
 		start_theta = current_theta;
 		initialized = true;
-		
 	}
 
 	uv = greatest(angles::normalize_angle_positive(start_theta+1.57+angle_error), angles::normalize_angle_positive(start_theta+1.57-angle_error));
 	lv = least(angles::normalize_angle_positive(start_theta+1.57+angle_error), angles::normalize_angle_positive(start_theta+1.57-angle_error));
-	
 	
 	if((uv < current_theta && current_theta <= uv + 2*angle_error) || (lv > current_theta && current_theta > (lv - 2*angle_error)))
 	{
 		count++;
 		initialized = false;
 		stopRotate();
-
 	}
 }
 
+//Drive forward a robot length (if something else is hit start over from step zero)
 void testing_step2()
 {
-	//("STEP 2");
 	drive(true);
 	if(!initialized)
 	{
 		start_x = current_pos_x;
 		start_y = current_pos_y;
-		//					//("x: %f y: %f", start_x, start_y);
 		initialized = true;
 	}
 
 	dist_traveled_x = start_x - current_pos_x;
 	dist_traveled_y = start_y - current_pos_y; 	
-	//				//("current_x: %f current_y: %f", current_pos_x, current_pos_y);
-	//				//("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
-
 	dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);				    
-	//				//("dist_traveled: %f \n", dist_traveled);
+
 
 	if(bump_sensor)
 	{
@@ -333,6 +323,7 @@ void testing_step2()
 	}
 }
 
+//Rotate back to face the obstacle
 void testing_step3()
 {
 
@@ -342,9 +333,9 @@ void testing_step3()
 		start_theta = current_theta;
 		initialized = true;
 	}
+	
 	uv = greatest(angles::normalize_angle_positive(start_theta-1.57+angle_error), angles::normalize_angle_positive(start_theta-1.57-angle_error));
 	lv = least(angles::normalize_angle_positive(start_theta-1.57+angle_error), angles::normalize_angle_positive(start_theta-1.57-angle_error));
-
 
 	if((uv < current_theta && current_theta <= uv + 2*angle_error) || (lv > current_theta && current_theta > (lv - 2*angle_error)))
 	{
@@ -354,9 +345,10 @@ void testing_step3()
 	}
 }
 
+//Drive forward a little way, if the obstacle is still there return to step 0 of testing, if its not there (we've gone around a corner) then drive forward a little further
+// and rotate to the right to face the new object edge
 void testing_step4()
-{
-	
+{	
 	if(!initialized)
 	{
 		start_x = current_pos_x;
@@ -373,9 +365,12 @@ void testing_step4()
 	msg.angular.z = rot;
 	dist_traveled_x = start_x - current_pos_x;
 	dist_traveled_y = start_y - current_pos_y; 	
-
-
-	dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);				    
+	dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);	
+	
+	if(bump_sensor)
+	{
+		stopDrive();
+	}
 
 
 	if(bump_sensor && !reset)
@@ -384,7 +379,6 @@ void testing_step4()
 		initialized = false;
 		reset = false;
 		stopRotate();
-
 		stopDrive();
 	}
 
@@ -403,10 +397,10 @@ void testing_step4()
 			rot = -rot_vel;
 		}
 	}
+	
 	uv = greatest(angles::normalize_angle_positive(start_theta-1.57+angle_error), angles::normalize_angle_positive(start_theta-1.57-angle_error));
 	lv = least(angles::normalize_angle_positive(start_theta-1.57+angle_error), angles::normalize_angle_positive(start_theta-1.57-angle_error));
 
-	//("current_theta: %f, start_theta: %f, boundaries: %f , %f", current_theta, start_theta, lv, uv);
 	if((uv < current_theta && current_theta <= uv + 2*angle_error) || (lv > current_theta && current_theta > (lv - 2*angle_error)))
 	{
 		count++;
@@ -416,25 +410,20 @@ void testing_step4()
 	}
 }
 
+//If necessary, drive to the new object edge and begin testing again
 void testing_step5()
 {
-	//("STEP 5");
 	drive(true);
 	if(!initialized)
 	{
 		start_x = current_pos_x;
 		start_y = current_pos_y;
-		//					//("x: %f y: %f", start_x, start_y);
 		initialized = true;
 	}
 
 	dist_traveled_x = start_x - current_pos_x;
 	dist_traveled_y = start_y - current_pos_y; 	
-	//				//("current_x: %f current_y: %f", current_pos_x, current_pos_y);
-	//				//("traveled_x: %f traveled_y: %f", dist_traveled_x, dist_traveled_y);
-
 	dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);				    
-	//				//("dist_traveled: %f \n", dist_traveled);
 
 	if(bump_sensor)
 	{
@@ -445,19 +434,18 @@ void testing_step5()
 
 	if(test_distance-distance_error < dist_traveled && dist_traveled <= test_distance+distance_error)
 	{
-
 		count++;					
 		initialized = false;
 		stopDrive();
 	}
 }
 
-//bool m_line()
-//{
-//	uv = greatest(angles::normalize_angle_positive(goal_theta+angle_pos_error), angles::normalize_angle_positive(goal_theta-angle_pos_error));
-//	lv = least(angles::normalize_angle_positive(goal_theta+angle_pos_error), angles::normalize_angle_positive(goal_theta-angle_pos_error));
-//	return ();
-//}
+//tests if we're back at the m-line after following an objects perimeter
+bool m_line()
+{
+	return (moved && fabs(current_pos_x)> fabs(started_test_x) &&  fabs(current_pos_y)>fabs(started_test_y) &&
+			((uv < current_pos_theta && current_pos_theta <= uv + 2*angle_pos_error) || (lv > current_pos_theta && current_pos_theta > (lv - 2*angle_pos_error))));
+}
 
 //dispatcher for the various testing routine steps, also checks to if we've regained the m-line
 void tester(int step_number)
@@ -505,8 +493,7 @@ void tester(int step_number)
 	current_pos_theta = atan2(current_pos_y, current_pos_x);
 	current_pos_theta = angles::normalize_angle_positive(current_pos_theta);
 
-	if (moved && fabs(goal_x)>fabs(current_pos_x) && fabs(current_pos_x)> 0 && fabs(goal_y)>fabs(current_pos_y) && fabs(current_pos_y)>0 &&
-			((uv < current_pos_theta && current_pos_theta <= uv + 2*angle_pos_error) || (lv > current_pos_theta && current_pos_theta > (lv - 2*angle_pos_error))))
+	if (m_line())
 	{
 		testing = false;
 		moved = false;
