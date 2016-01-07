@@ -36,6 +36,10 @@
  * 			
  *
  */
+/*
+ * spawn new create model: rosrun gazebo_ros  spawn_model -file ~/catkin_ws/src/create/model-1_4.sdf -sdf -model create
+ *  
+ */
 
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h> 
@@ -66,8 +70,8 @@ double goal_y = 4;
 double goal_theta;
 
 //how fast the robot moves
-double rot_vel=.2;
-double drive_speed = .1;
+double rot_vel=.5;
+double drive_speed = .25;
 
 //allowable errors to account for the robot coasting a bit after being sent one stop command
 double angle_error = .05;

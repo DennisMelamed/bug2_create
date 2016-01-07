@@ -45,12 +45,13 @@
   <build_depend>nav_msgs</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>angle</build_depend>
+  <build_depend>roslib</build_depend>
   <run_depend>angle</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>std_msgs</run_depend>
   <run_depend>nav_msgs</run_depend>
   <run_depend>geometry_msgs</run_depend>
-  
+  <run_depend>roslib</run_depend> 
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
