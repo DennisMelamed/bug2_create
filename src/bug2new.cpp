@@ -515,7 +515,7 @@ int main(int argc, char **argv)
 
 	//Creates the publisher, and tells it to publish
 	//to the /cmd_vel topic, with a queue size of 100
-	ros::Publisher pub=nh.advertise<geometry_msgs::Twist>("/cmd_vel", 100);
+	ros::Publisher pub=nh.advertise<geometry_msgs::Twist>("turtlebot_node/cmd_vel", 100);
 	//Creates Subscribers to the odometry and contact sensor topics
 	ros::Subscriber odom =nh.subscribe("odom", 100, odomCallback);
 	ros::Subscriber bump =nh.subscribe("base_bumper", 100, bumpCallback);

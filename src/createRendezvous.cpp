@@ -333,7 +333,7 @@ void explore()
 	}
 	if(explored)
 	{
-		wave_number++;
+		wave_number = wave_number*2;
 		ROS_INFO("wave_number: %d", wave_number);
 		initialized = false;
 		explored = false;

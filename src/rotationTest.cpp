@@ -28,7 +28,7 @@ double goal_y = 4;
 double goal_theta;
 
 //how fast the robot moves
-double rot_vel=.15;
+double rot_vel= .1;
 double drive_speed = .1;
 
 //allowable errors to account for the robot coasting a bit after being sent one stop command
@@ -69,6 +69,7 @@ int steps = 8;
 
 int rando;
 int wave_number=1;
+int line_number=0;
 
 bool initialized = false;
 bool drive_initialized = false;
@@ -152,12 +153,12 @@ void drive(bool x, double distance) //true for forward, false for backwards
 	if(x)
 	{
 		msg.linear.x = drive_speed;
-		msg.angular.z = 0;
+		
 	}
 	else
 	{
 		msg.linear.x = -drive_speed;
-		msg.angular.z = 0;
+	
 	}
 
 	if(!drive_initialized)
@@ -182,18 +183,18 @@ void drive(bool x, double distance) //true for forward, false for backwards
 
 }
 
-void rotate(bool x, double radians) //true for counterclockwise, false for clockwise
+void rotate(bool x, double radians) //true for counterclockwise, false for clockwise; counter indicates which variable to increment at the end to move onto the next cycle step 
+//counter=0-->overall program flow
+//counter=1-->test
 {
 	if (x)
 	{
-		msg.linear.x = 0;
 		msg.angular.z = rot_vel;
 		uv = greatest(angles::normalize_angle_positive(start_theta+radians+angle_error), angles::normalize_angle_positive(start_theta+radians-angle_error));
 		lv = least(angles::normalize_angle_positive(start_theta+radians+angle_error), angles::normalize_angle_positive(start_theta+radians-angle_error));
 	}
 	else
 	{
-		msg.linear.x = 0;
 		msg.angular.z = -rot_vel;
 		uv = greatest(angles::normalize_angle_positive(start_theta-radians+angle_error), angles::normalize_angle_positive(start_theta-radians-angle_error));
 		lv = least(angles::normalize_angle_positive(start_theta-radians+angle_error), angles::normalize_angle_positive(start_theta-radians-angle_error));
@@ -210,161 +211,175 @@ void rotate(bool x, double radians) //true for counterclockwise, false for clock
 
 	if((uv < current_theta && current_theta <= uv + 2*angle_error) || (lv > current_theta && current_theta > (lv - 2*angle_error)))
 	{
-		count++;
+		
+			count++;
+		
 		rot_initialized = false;
 		stopRotate();
 	}
 }
+//
+//bool test(bool direction) //true for testing right, false, for testing left
+//{
+//	if(test_count%test_steps == 0)
+//	{
+//		drive(false, robot_radius);
+//	}
+//	else if(test_count%test_steps == 1)
+//	{
+//		stopDrive();
+//		if(direction)
+//		{
+//			rotate(false, 1.57);
+//		}
+//		else if(!direction)
+//		{
+//			rotate(true, 1.57);
+//		}
+//	}
+//	else if(test_count%test_steps ==2)
+//	{
+//		stopRotate();
+//		drive(true, 2*robot_radius);
+//	}
+//	else if(test_count%test_steps ==3)
+//	{
+//		stopDrive();
+//		if(direction)
+//		{
+//			rotate(true, 1.57);
+//		}
+//		else if(!direction)
+//		{
+//			rotate(false, 1.57);
+//		}
+//	}
+//	else if(test_count%test_steps == 4)
+//	{
+//		drive(true, 2*robot_radius);
+//		if(bump_sensor)
+//		{
+//			return true;
+//		}
+//	}
+//}
+//
+//
+//
+//void exploreLeftFirst()
+//{
+//	if(bump_sensor)
+//	{
+//		ROS_INFO("CONTACT EVENT, CONTACT EVENT, RENDEZVOUS ACHIEVED");
+//		stopDrive();
+//		return;
+//	}
+//	else if(count%steps == 0)
+//	{
+//		rotate(true, 1.57);
+//	}
+//	else if(count%steps == 1)
+//	{
+//		drive(true, test_distance*wave_number);
+//	}
+//	else if(count%steps == 2)
+//	{
+//		rotate(false, 3.14);
+//	} 
+//	else if(count%steps == 3)
+//	{
+//		drive(true, 2*test_distance*wave_number);
+//	}
+//	else if(count%steps == 4)
+//	{
+//		rotate(true, 3.14);
+//	}
+//	else if(count%steps == 5)
+//	{
+//		drive(true, test_distance*wave_number);
+//	}
+//	else if(count%steps == 6)
+//	{
+//		rotate(false, 1.57);
+//	}
+//	else if(count%steps == 7)
+//	{
+//		explored= true;
+//		count++;
+//	}
+//
+//}
+//
+//void exploreRightFirst()
+//{
+//	if(bump_sensor)
+//	{
+//		
+//	}
+//	else if(count%steps == 0)
+//	{
+//		drive(true);
+//		if(bump_sensor)
+//		{
+//			stopDrive();
+//			count++;
+//		}
+//	}
+//	else if(count%steps == 1)
+//	{
+//		drive(true, test_distance*wave_number);
+//	}
+//	else if(count%steps == 2)
+//	{
+//		rotate(true, 3.14);
+//	} 
+//	else if(count%steps == 3)
+//	{
+//		drive(true, 2*test_distance*wave_number);
+//	}
+//	else if(count%steps == 4)
+//	{
+//		rotate(false, 3.14);
+//	}
+//	else if(count%steps == 5)
+//	{
+//		drive(true, test_distance*wave_number);
+//	}
+//	else if(count%steps == 6)
+//	{
+//		rotate(true, 1.57);
+//	}
+//	else if(count%steps == 7)
+//	{
+//		explored= true;
+//		count++;
+//	}
+//
+//}
 
-
-
-
-
-void exploreLeftFirst()
-{
-	if(bump_sensor)
-	{
-		ROS_INFO("CONTACT EVENT, CONTACT EVENT, RENDEZVOUS ACHIEVED");
-		stopDrive();
-		return;
-	}
-	else if(count%steps == 0)
-	{
-		rotate(true, 1.57);
-	}
-	else if(count%steps == 1)
-	{
-		drive(true, test_distance*wave_number);
-	}
-	else if(count%steps == 2)
-	{
-		rotate(false, 3.14);
-	} 
-	else if(count%steps == 3)
-	{
-		drive(true, 2*test_distance*wave_number);
-	}
-	else if(count%steps == 4)
-	{
-		rotate(true, 3.14);
-	}
-	else if(count%steps == 5)
-	{
-		drive(true, test_distance*wave_number);
-	}
-	else if(count%steps == 6)
-	{
-		rotate(false, 1.57);
-	}
-	else if(count%steps == 7)
-	{
-		explored= true;
-		count++;
-	}
-
-}
-
-void exploreRightFirst()
-{
-	if(bump_sensor)
-	{
-		ROS_INFO("CONTACT EVENT, CONTACT EVENT, RENDEZVOUS ACHIEVED");
-		stopDrive();
-		return;
-	}
-	else if(count%steps == 0)
-	{
-		rotate(false, 1.57);
-	}
-	else if(count%steps == 1)
-	{
-		drive(true, test_distance*wave_number);
-	}
-	else if(count%steps == 2)
-	{
-		rotate(true, 3.14);
-	} 
-	else if(count%steps == 3)
-	{
-		drive(true, 2*test_distance*wave_number);
-	}
-	else if(count%steps == 4)
-	{
-		rotate(false, 3.14);
-	}
-	else if(count%steps == 5)
-	{
-		drive(true, test_distance*wave_number);
-	}
-	else if(count%steps == 6)
-	{
-		rotate(true, 1.57);
-	}
-	else if(count%steps == 7)
-	{
-		explored= true;
-		count++;
-	}
-
-}
-
-void explore()
-{
-	if(bump_sensor)
-	{
-		ROS_INFO("CONTACT EVENT, CONTACT EVENT, RENDEZVOUS ACHIEVED");
-		stopDrive();
-		return;
-	}
-	if(!initialized)
-	{
-		rando = rand()%2;
-		initialized = true;
-	}
-	if(rando == 1 && !explored)
-	{
-		exploreLeftFirst();
-	}
-	else if (rando == 0 && !explored)
-	{
-		exploreRightFirst();
-	}
-	if(explored)
-	{
-		wave_number = wave_number*2;
-		ROS_INFO("wave_number: %d", wave_number);
-		explored = false;
-	}
-}
 
 int main(int argc, char **argv)
 {
 	//Initializes ROS, and sets up a node
-	ros::init(argc, argv, "create1");
+	ros::init(argc, argv, "create");
 	ros::NodeHandle nh;
 
 	//Creates the publisher, and tells it to publish
 	//to the /cmd_vel topic, with a queue size of 100
-	ros::Publisher pub=nh.advertise<geometry_msgs::Twist>("/cmd_vel1", 100);
+	ros::Publisher pub=nh.advertise<geometry_msgs::Twist>("/cmd_vel", 100);
 	//Creates Subscribers to the odometry and contact sensor topics
-	ros::Subscriber odom =nh.subscribe("odom1", 100, odomCallback);
-	ros::Subscriber bump =nh.subscribe("base_bumper1", 100, bumpCallback);
+	ros::Subscriber odom =nh.subscribe("odom", 100, odomCallback);
+	ros::Subscriber bump =nh.subscribe("base_bumper", 100, bumpCallback);
 	ros::Rate rate(10);
 
 	srand(time(0));
 
 	while(ros::ok())
 	{
-		explore();
+		drive(true, 6.28318);
+		rotate(true, 6.28318);
 		ROS_INFO("rando: %d", rando);
-
-		//safety, keeps odometry as accurate as possible (gets thrown off if the robot is driven into a wall- it doesn't move but the encoders read a change)
-		if(bump_sensor)
-		{
-			stopDrive();
-			stopRotate();
-
-		}		
+		
 
 		//Publish the message
 		pub.publish(msg);
@@ -373,10 +388,6 @@ int main(int argc, char **argv)
 		rate.sleep();
 		ros::spinOnce();
 
-		if(bump_sensor)
-		{
-			return 0;
-		}
 	}
 	return 0;
 }

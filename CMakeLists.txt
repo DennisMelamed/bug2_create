@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   nav_msgs
   gazebo_msgs
+  tf
 )
 
 ## System dependencies are found with CMake's conventions
@@ -196,10 +197,18 @@ add_executable(bug2 src/bug2.cpp)
 add_executable(bug2new src/bug2new.cpp)
 add_executable(createRendezvous src/createRendezvous.cpp)
 add_executable(createRendezvous1 src/createRendezvous1.cpp)
-add_dependencies(odom_listen nav_msgs_generate_messages_cpp driver bug2 bug2new createRendezvous createRendezvous1)
+add_executable(gmapping_pos src/gmapping_pos.cpp)
+add_executable(amcl_pose_reader src/amcl_pose_reader.cpp)
+add_executable(rotationTest src/rotationTest.cpp)
+add_executable(roomRendezvous src/roomRendezvous.cpp)
+add_dependencies(odom_listen nav_msgs_generate_messages_cpp roomRendezvous rotationTest amcl_pose_readerdriver bug2 bug2new createRendezvous createRendezvous1 gmapping_pos)
+target_link_libraries(gmapping_pos ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 target_link_libraries(driver ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 target_link_libraries(odom_listen ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 target_link_libraries(bug2 ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 target_link_libraries(bug2new ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 target_link_libraries(createRendezvous ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 target_link_libraries(createRendezvous1 ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+target_link_libraries(amcl_pose_reader ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+target_link_libraries(rotationTest ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+target_link_libraries(roomRendezvous ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
