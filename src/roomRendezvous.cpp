@@ -26,7 +26,7 @@ double current_pos_theta;
 double goal_theta;
 
 //how fast the robot moves
-double rot_vel=.15;
+double rot_vel=.1;
 double drive_speed = .1;
 
 //allowable errors to account for the robot coasting a bit after being sent one stop command
@@ -65,10 +65,10 @@ int count1 = 0;
 int steps1 = 3;
 
 int count2 = 0;
-int steps2 = 2;
+int steps2 = 3;
 
 int count3 = 0;
-int steps3 = 2;
+int steps3 = 4;
 
 int rando;
 
@@ -77,6 +77,7 @@ bool initialized = false;
 bool drive_initialized = false;
 bool has_traveled = false;
 bool rot_initialized = false;
+bool circle_initialized = false;
 bool rot_half = false;
 bool bump_sensor = false;
 bool testing = false;
@@ -189,7 +190,7 @@ void drive(bool x, double distance, int counter) //true for forward, false for b
 
 	ROS_INFO("distance: %f, distance-distance_error: %f, distance+distance_error: %f, dist_traveled: %f", distance, distance-distance_error, distance+distance_error, dist_traveled);
 
-	if((distance-distance_error < dist_traveled && dist_traveled < distance+distance_error) || (-distance_error < dist_traveled && dist_traveled < distance_error && has_traveled)) //this doesn't work.
+	if((distance-distance_error < dist_traveled && dist_traveled < distance+distance_error))
 	{
 		if (counter == 0)
 		{
@@ -207,11 +208,7 @@ void drive(bool x, double distance, int counter) //true for forward, false for b
 		{
 			count3++;
 		}
-		else if(counter == 4)
-		{
-			count3++;
-			count++;
-		}
+		
 		drive_initialized = false;
 		has_traveled = false;
 		stopDrive();
@@ -219,20 +216,20 @@ void drive(bool x, double distance, int counter) //true for forward, false for b
 
 }
 
-void rotate(bool x, double radians, int counter) //true for counterclockwise, false for clockwise; counter indicates which variable to increment at the end to move onto the next cycle step 
+void rotate(bool x, double radians, int counter, double speed = rot_vel) //true for counterclockwise, false for clockwise; counter indicates which variable to increment at the end to move onto the next cycle step 
 //counter=0-->overall program flow
 {
 	if (x)
 	{
 		
-		msg.angular.z = rot_vel;
+		msg.angular.z = speed;
 		uv = greatest(angles::normalize_angle_positive(start_theta+radians+angle_error), angles::normalize_angle_positive(start_theta+radians-angle_error));
 		lv = least(angles::normalize_angle_positive(start_theta+radians+angle_error), angles::normalize_angle_positive(start_theta+radians-angle_error));
 	}
 	else
 	{
 		
-		msg.angular.z = -rot_vel;
+		msg.angular.z = -speed;
 		uv = greatest(angles::normalize_angle_positive(start_theta-radians+angle_error), angles::normalize_angle_positive(start_theta-radians-angle_error));
 		lv = least(angles::normalize_angle_positive(start_theta-radians+angle_error), angles::normalize_angle_positive(start_theta-radians-angle_error));
 	}
@@ -269,13 +266,62 @@ void rotate(bool x, double radians, int counter) //true for counterclockwise, fa
 		{
 			count3++;
 		}
-		else if(counter == 4)
-		{
-			count3++;
-			count++;
-		}
+		
 		rot_initialized = false;
 		rot_half = false;
+		stopRotate();
+	}
+}
+
+void driveCircle( int size, int counter)
+{
+	
+	msg.linear.x = drive_speed;
+	rotate(false, 6.28, 7, .1*size);	
+	
+
+	if(!circle_initialized)
+	{
+		start_x = current_pos_x;
+		start_y = current_pos_y;
+		circle_initialized = true;
+	}
+	
+	
+
+	dist_traveled_x = start_x - current_pos_x;
+	dist_traveled_y = start_y - current_pos_y; 	
+	dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);	
+
+	if(dist_traveled > distance_error)
+	{
+		has_traveled = true;
+	}
+	
+	
+
+	if((start_x-distance_error < current_pos_x && current_pos_x < start_x+distance_error) && (start_y-distance_error < current_pos_y && current_pos_y < start_y+distance_error) && has_traveled)
+	{
+		if (counter == 0)
+		{
+			count++;
+		}
+		else if(counter == 1)
+		{
+			count1++;
+		}
+		else if(counter ==2)
+		{
+			count2++;
+		}
+		else if(counter == 3)
+		{
+			count3++;
+		}
+		
+		circle_initialized = false;
+		has_traveled = false;
+		stopDrive();
 		stopRotate();
 	}
 }
@@ -287,21 +333,39 @@ void circle(int size)
 		rotate(false, 1.57, 3);
 	}
 	else if(count3%steps3 ==1)
-	{			
-		rotate(false, 6.28, 4);
-		drive(true, 6.28*(2*j +1)*radius,4);
+	{		
+		driveCircle((2*j+1)*radius, 3);
+		//rotate(false, 6.28, 4);
+		//drive(true, 6.28*(2*j +1)*radius,4);
+	}
+	else if(count3%steps3 == 2)
+	{
+		rotate(true,1.57,3);
+	}
+	else if(count3%steps3 ==3)
+	{
+		count1++;
+		count3++;
 	}
 }
 
 void wait()
 {
+	double wait_dist = (2*n+1)*radius + 6.28*(n+1)*(n+1)*radius;
+
+	ROS_INFO("wait_dist: %f", wait_dist);
 	if(count2%steps2 == 0)
 	{
-		drive((2*n+1)*radius + 6.28*(n+1)*(n+1)*radius, true, 2);
+		drive(true, wait_dist, 2);
 	}
 	else if(count2%steps2==1)
 	{
-		drive((2*n+1)*radius + 6.28*(n+1)*(n+1)*radius, false, 0);
+		drive(false, wait_dist, 2);
+	}
+	else if(count2%steps2 == 2)
+	{
+		count2++;
+		count++;
 	}
 }
 
@@ -330,9 +394,12 @@ void move()
 			count1++;
 		}
 	}
-	else
+	if(j > n)
 	{
+		double return_distance = 2*n*radius + radius;
+		ROS_INFO("return_distance: %f", return_distance);
 		drive(false, 2*n*radius + radius, 0);
+		
 	}
 }
 
@@ -357,6 +424,7 @@ void ssrS(int decision)
 	}
 	if(count%steps == 1)
 	{
+		j=0;
 		i++;
 		initialized = false;
 		count++;
@@ -392,10 +460,10 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			ssrS(rando);
+			ssrS(0);//rando);
 		}
 		
-		ROS_INFO("rando: %d", rando);
+		ROS_INFO("rando: %d count: %d j: %d, n: %d", rando, count, j, n);
 		
 
 		//Publish the message
