@@ -221,7 +221,6 @@ void rotate(bool x, double radians, int counter, double speed = rot_vel) //true 
 {
 	if (x)
 	{
-		
 		msg.angular.z = speed;
 		uv = greatest(angles::normalize_angle_positive(start_theta+radians+angle_error), angles::normalize_angle_positive(start_theta+radians-angle_error));
 		lv = least(angles::normalize_angle_positive(start_theta+radians+angle_error), angles::normalize_angle_positive(start_theta+radians-angle_error));
@@ -240,13 +239,13 @@ void rotate(bool x, double radians, int counter, double speed = rot_vel) //true 
 		rot_initialized = true;
 	}
 	
-	if(current_theta-start_theta > (uv-start_theta)/2)
+	if(abs(current_theta-start_theta) > angle_error)
 	{
 		rot_half = true;
 	}
 
 
-	ROS_INFO("uv: %f, lv: %f, current_theta: %f", uv, lv, current_theta);
+	ROS_INFO("uv: %f, lv: %f, current_theta: %f, rot_half: %d", uv, lv, current_theta, rot_half);
 
 	if(((uv < current_theta && current_theta <= uv + 2*angle_error) || (lv > current_theta && current_theta > (lv - 2*angle_error))) && rot_half)
 	{
@@ -273,11 +272,13 @@ void rotate(bool x, double radians, int counter, double speed = rot_vel) //true 
 	}
 }
 
-void driveCircle( int size, int counter)
+void driveCircle(int size, int counter)
 {
 	
 	msg.linear.x = drive_speed;
-	rotate(false, 6.28, 7, .1*size);	
+	double circle_speed = .1*(pow(size,-1));
+	ROS_INFO("circle_speed: %f", circle_speed);
+	rotate(false, 6.28, 7, circle_speed);	
 	
 
 	if(!circle_initialized)
@@ -386,6 +387,7 @@ void move()
 		}
 		else if(count1%steps1 == 1)
 		{
+			ROS_INFO("(2*j+1)*radius: %d", (2*j+1)*radius);
 			circle((2*j+1)*radius);
 		}
 		else if(count1%steps1 == 2)
@@ -410,7 +412,7 @@ void ssrS(int decision)
 		rando = rand()%2;
 		initialized = true;
 	}
-	n = floor((pow(r,i))/(2*radius));
+	n = 1;//floor((pow(r,i))/(2*radius));
 	if(count%steps == 0)
 	{
 		if(decision ==1)
