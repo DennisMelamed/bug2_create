@@ -188,7 +188,7 @@ void drive(bool x, double distance, int counter) //true for forward, false for b
 	dist_traveled_y = start_y - current_pos_y; 	
 	dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);	
 
-	ROS_INFO("distance: %f, distance-distance_error: %f, distance+distance_error: %f, dist_traveled: %f", distance, distance-distance_error, distance+distance_error, dist_traveled);
+	//ROS_INFO("distance: %f, distance-distance_error: %f, distance+distance_error: %f, dist_traveled: %f", distance, distance-distance_error, distance+distance_error, dist_traveled);
 
 	if((distance-distance_error < dist_traveled && dist_traveled < distance+distance_error))
 	{
@@ -245,7 +245,7 @@ void rotate(bool x, double radians, int counter, double speed = rot_vel) //true 
 	}
 
 
-	ROS_INFO("uv: %f, lv: %f, current_theta: %f, rot_half: %d", uv, lv, current_theta, rot_half);
+	//ROS_INFO("uv: %f, lv: %f, current_theta: %f, rot_half: %d", uv, lv, current_theta, rot_half);
 
 	if(((uv < current_theta && current_theta <= uv + 2*angle_error) || (lv > current_theta && current_theta > (lv - 2*angle_error))) && rot_half)
 	{
@@ -277,7 +277,7 @@ void driveCircle(int size, int counter)
 	
 	msg.linear.x = drive_speed;
 	double circle_speed = .1*(pow(size,-1));
-	ROS_INFO("circle_speed: %f", circle_speed);
+	//ROS_INFO("circle_speed: %f", circle_speed);
 	rotate(false, 6.28, 7, circle_speed);	
 	
 
@@ -355,7 +355,7 @@ void wait()
 	double wait_dist = (2*n+1)*radius + 6.28*(n+1)*(n+1)*radius;
 	
 
-	ROS_INFO("wait_dist: %f", wait_dist);
+	//ROS_INFO("wait_dist: %f", wait_dist);
 	if(count2%steps2 == 0)
 	{
 		rotate(true, wait_dist/rot_vel, 2);
@@ -384,7 +384,7 @@ void move()
 		}
 		else if(count1%steps1 == 1)
 		{
-			ROS_INFO("(2*j+1)*radius: %d", (2*j+1)*radius);
+			//ROS_INFO("(2*j+1)*radius: %d", (2*j+1)*radius);
 			circle((2*j+1)*radius);
 		}
 		else if(count1%steps1 == 2)
@@ -396,7 +396,7 @@ void move()
 	if(j > n)
 	{
 		double return_distance = 2*n*radius + radius;
-		ROS_INFO("return_distance: %f", return_distance);
+		//ROS_INFO("return_distance: %f", return_distance);
 		drive(false, 2*n*radius + radius, 0);
 		
 	}
@@ -436,15 +436,15 @@ void ssrS(int decision)
 int main(int argc, char **argv)
 {
 	//Initializes ROS, and sets up a node
-	ros::init(argc, argv, "create");
+	ros::init(argc, argv, "create1");
 	ros::NodeHandle nh;
 
 	//Creates the publisher, and tells it to publish
 	//to the /cmd_vel topic, with a queue size of 100
-	ros::Publisher pub=nh.advertise<geometry_msgs::Twist>("/cmd_vel", 100);
+	ros::Publisher pub=nh.advertise<geometry_msgs::Twist>("/cmd_vel1", 100);
 	//Creates Subscribers to the odometry and contact sensor topics
-	ros::Subscriber odom =nh.subscribe("odom", 100, odomCallback);
-	ros::Subscriber bump =nh.subscribe("base_bumper", 100, bumpCallback);
+	ros::Subscriber odom =nh.subscribe("odom1", 100, odomCallback);
+	ros::Subscriber bump =nh.subscribe("base_bumper1", 100, bumpCallback);
 	ros::Rate rate(10);
 
 	srand(time(0));
@@ -459,10 +459,10 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			ssrS(0);
+			ssrS(1);
 		}
 		
-		ROS_INFO("rando: %d count: %d j: %d, n: %d", rando, count, j, n);
+		//ROS_INFO("rando: %d count: %d j: %d, n: %d", rando, count, j, n);
 		
 
 		//Publish the message
