@@ -86,7 +86,7 @@ bool moved = false;
 bool explored = false;
 
 double r = 1.225;
-int radius = robot_radius;
+int radius = 2*robot_radius;
 int i = 1;
 int n = 0;
 int j = 0;
@@ -409,7 +409,7 @@ void ssrS(int decision)
 		rando = rand()%2;
 		initialized = true;
 	}
-	n=floor((pow(r,i))/(2*robot_radius));
+	n=floor((pow(r,i))/(2*radius));
 	if(count%steps == 0)
 	{
 		if(decision ==1)

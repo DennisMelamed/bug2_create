@@ -32,7 +32,7 @@ double drive_speed = .1;
 //allowable errors to account for the robot coasting a bit after being sent one stop command
 double angle_error = .005;
 double angle_pos_error = .009;
-double distance_error = .1;
+double distance_error = .01;
 
 //used during rotations and various translations to hold the beginning state
 double start_x;
@@ -86,7 +86,7 @@ bool moved = false;
 bool explored = false;
 
 double r = 1.225;
-int radius = robot_radius;
+double radius = 2*robot_radius;
 int i = 1;
 int n = 0;
 int j = 0;
@@ -272,11 +272,11 @@ void rotate(bool x, double radians, int counter, double speed = rot_vel) //true 
 	}
 }
 
-void driveCircle(int size, int counter)
+void driveCircle(double size, int counter)
 {
 	
 	msg.linear.x = drive_speed;
-	double circle_speed = .1*(pow(size,-1));
+	double circle_speed = 6.28*drive_speed*pow(size, -1);
 	ROS_INFO("circle_speed: %f", circle_speed);
 	rotate(false, 6.28, 7, circle_speed);	
 	
@@ -327,7 +327,7 @@ void driveCircle(int size, int counter)
 	}
 }
 
-void circle(int size)
+void circle(double size)
 {
 	if(count3%steps3 ==0)
 	{
@@ -335,7 +335,7 @@ void circle(int size)
 	}
 	else if(count3%steps3 ==1)
 	{		
-		driveCircle((2*j+1)*radius, 3);
+		driveCircle(size, 3);
 		//rotate(false, 6.28, 4);
 		//drive(true, 6.28*(2*j +1)*radius,4);
 	}
@@ -384,7 +384,7 @@ void move()
 		}
 		else if(count1%steps1 == 1)
 		{
-			ROS_INFO("(2*j+1)*radius: %d", (2*j+1)*radius);
+			ROS_INFO("(2*j+1)*radius: %f", (2*j+1)*radius);
 			circle((2*j+1)*radius);
 		}
 		else if(count1%steps1 == 2)
@@ -409,7 +409,7 @@ void ssrS(int decision)
 		rando = rand()%2;
 		initialized = true;
 	}
-	n=floor((pow(r,i))/(2*robot_radius));
+	n=floor((pow(r,i))/(2*radius));
 	if(count%steps == 0)
 	{
 		if(decision ==1)
