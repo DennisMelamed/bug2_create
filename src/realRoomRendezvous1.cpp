@@ -70,8 +70,8 @@ int steps2 = 2;
 int count3 = 0;
 int steps3 = 4;
 
-int rando;
 int random1;
+int rando;
 
 
 bool initialized = false;
@@ -375,8 +375,9 @@ void wait()
 {
 	double wait_dist = (2*n+1)*2*radius + 6.28*(n+1)*(n+1)*radius + (drive_speed*(n+1)*3.14*pow(rot_vel,-1));
 	stopDrive();
-	
+
 	ROS_INFO("wait_dist: %f", wait_dist);
+	
 	rotate(true, 6.28, 0, 6.28*drive_speed*pow(wait_dist,-1));
 	
 }
@@ -450,18 +451,18 @@ void ssrS(int decision)
 int main(int argc, char **argv)
 {
 	//Initializes ROS, and sets up a node
-	ros::init(argc, argv, "create");
+	ros::init(argc, argv, "create1");
 	ros::NodeHandle nh;
 
 	//Creates the publisher, and tells it to publish
 	//to the /cmd_vel topic, with a queue size of 100
-	ros::Publisher pub=nh.advertise<geometry_msgs::Twist>("/cmd_vel", 100);
+	ros::Publisher pub=nh.advertise<geometry_msgs::Twist>("/cmd_vel1", 100);
 	//Creates Subscribers to the odometry and contact sensor topics
-	ros::Subscriber odom =nh.subscribe("odom", 100, odomCallback);
-	ros::Subscriber bump =nh.subscribe("base_bumper", 100, bumpCallback);
+	ros::Subscriber odom =nh.subscribe("odom1", 100, odomCallback);
+	ros::Subscriber bump =nh.subscribe("base_bumper1", 100, bumpCallback);
 	ros::Rate rate(10);
 
-	srand(0);
+	srand(4);
 	random1 = rand();
 	rando = random1%2;
 

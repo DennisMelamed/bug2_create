@@ -32,7 +32,7 @@ double drive_speed = .1;
 //allowable errors to account for the robot coasting a bit after being sent one stop command
 double angle_error = .005;
 double angle_pos_error = .009;
-double distance_error = .1;
+double distance_error = .01;
 
 //used during rotations and various translations to hold the beginning state
 double start_x;
@@ -70,6 +70,7 @@ int steps2 = 2;
 int count3 = 0;
 int steps3 = 4;
 
+int random1;
 int rando;
 
 
@@ -86,7 +87,7 @@ bool moved = false;
 bool explored = false;
 
 double r = 1.225;
-int radius = 2*robot_radius;
+double radius = 2*robot_radius;
 int i = 1;
 int n = 0;
 int j = 0;
@@ -159,6 +160,12 @@ void stopRotate()
 	msg.angular.z = 0;
 }
 
+void fullPermaStop()
+{
+		stopDrive();
+		stopRotate();
+}
+
 void drive(bool x, double distance, int counter) //true for forward, false for backwards
 {
 	if(x)
@@ -187,8 +194,15 @@ void drive(bool x, double distance, int counter) //true for forward, false for b
 	dist_traveled_x = start_x - current_pos_x;
 	dist_traveled_y = start_y - current_pos_y; 	
 	dist_traveled = sqrt(dist_traveled_x*dist_traveled_x + dist_traveled_y*dist_traveled_y);	
+	
+	if(bump_sensor)
+		{
+			stopDrive();
+			stopRotate();
+			return;
+		}
 
-	//ROS_INFO("distance: %f, distance-distance_error: %f, distance+distance_error: %f, dist_traveled: %f", distance, distance-distance_error, distance+distance_error, dist_traveled);
+	ROS_INFO("distance: %f, distance-distance_error: %f, distance+distance_error: %f, dist_traveled: %f", distance, distance-distance_error, distance+distance_error, dist_traveled);
 
 	if((distance-distance_error < dist_traveled && dist_traveled < distance+distance_error))
 	{
@@ -245,7 +259,7 @@ void rotate(bool x, double radians, int counter, double speed = rot_vel) //true 
 	}
 
 
-	//ROS_INFO("uv: %f, lv: %f, current_theta: %f, rot_half: %d", uv, lv, current_theta, rot_half);
+	ROS_INFO("uv: %f, lv: %f, current_theta: %f, rot_half: %d", uv, lv, current_theta, rot_half);
 
 	if(((uv < current_theta && current_theta <= uv + 2*angle_error) || (lv > current_theta && current_theta > (lv - 2*angle_error))) && rot_half)
 	{
@@ -272,12 +286,12 @@ void rotate(bool x, double radians, int counter, double speed = rot_vel) //true 
 	}
 }
 
-void driveCircle(int size, int counter)
+void driveCircle(double size, int counter)
 {
 	
 	msg.linear.x = drive_speed;
-	double circle_speed = .1*(pow(size,-1));
-	//ROS_INFO("circle_speed: %f", circle_speed);
+	double circle_speed = drive_speed*pow(size, -1);
+	ROS_INFO("circle_speed: %f", circle_speed);
 	rotate(false, 6.28, 7, circle_speed);	
 	
 
@@ -297,6 +311,13 @@ void driveCircle(int size, int counter)
 	if(dist_traveled > distance_error)
 	{
 		has_traveled = true;
+	}
+	
+	if(bump_sensor)
+	{
+		stopDrive();
+		stopRotate();
+		return;
 	}
 	
 	
@@ -327,7 +348,7 @@ void driveCircle(int size, int counter)
 	}
 }
 
-void circle(int size)
+void circle(double size)
 {
 	if(count3%steps3 ==0)
 	{
@@ -335,7 +356,7 @@ void circle(int size)
 	}
 	else if(count3%steps3 ==1)
 	{		
-		driveCircle((2*j+1)*radius, 3);
+		driveCircle(size, 3);
 		//rotate(false, 6.28, 4);
 		//drive(true, 6.28*(2*j +1)*radius,4);
 	}
@@ -352,19 +373,13 @@ void circle(int size)
 
 void wait()
 {
-	double wait_dist = (2*n+1)*radius + 6.28*(n+1)*(n+1)*radius;
-	
+	double wait_dist = (2*n+1)*2*radius + 6.28*(n+1)*(n+1)*radius + (drive_speed*(n+1)*3.14*pow(rot_vel,-1));
+	stopDrive();
 
-	//ROS_INFO("wait_dist: %f", wait_dist);
-	if(count2%steps2 == 0)
-	{
-		rotate(true, wait_dist/rot_vel, 2);
-	}
-	else if(count2%steps2 == 1)
-	{
-		count2++;
-		count++;
-	}
+	ROS_INFO("wait_dist: %f", wait_dist);
+	
+	rotate(true, 6.28, 0, 6.28*drive_speed*pow(wait_dist,-1));
+	
 }
 
 void move()
@@ -384,7 +399,7 @@ void move()
 		}
 		else if(count1%steps1 == 1)
 		{
-			//ROS_INFO("(2*j+1)*radius: %d", (2*j+1)*radius);
+			ROS_INFO("(2*j+1)*radius: %f", (2*j+1)*radius);
 			circle((2*j+1)*radius);
 		}
 		else if(count1%steps1 == 2)
@@ -396,7 +411,7 @@ void move()
 	if(j > n)
 	{
 		double return_distance = 2*n*radius + radius;
-		//ROS_INFO("return_distance: %f", return_distance);
+		ROS_INFO("return_distance: %f", return_distance);
 		drive(false, 2*n*radius + radius, 0);
 		
 	}
@@ -447,8 +462,9 @@ int main(int argc, char **argv)
 	ros::Subscriber bump =nh.subscribe("base_bumper1", 100, bumpCallback);
 	ros::Rate rate(10);
 
-	srand(time(0));
-	rando = rand()%2;
+	srand(4);
+	random1 = rand();
+	rando = random1%2;
 
 	while(ros::ok())
 	{
@@ -456,13 +472,16 @@ int main(int argc, char **argv)
 		{
 			stopDrive();
 			stopRotate();
+			fullPermaStop();
+			ros::shutdown();
+			return 0;
 		}
 		else
 		{
-			ssrS(1);
+			ssrS(0);
 		}
 		
-		//ROS_INFO("rando: %d count: %d j: %d, n: %d", rando, count, j, n);
+		ROS_INFO("random: %d count: %d j: %d, n: %d", random1, count, j, n);
 		
 
 		//Publish the message

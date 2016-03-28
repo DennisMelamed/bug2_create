@@ -11,6 +11,7 @@
 #include <angles/angles.h>
 #include <ctime>
 #include <cstdlib>
+#include <create_node/TurtlebotSensorState.h>
 
 //holds the current position of the robot, its current orientation
 double current_pos_x;
@@ -26,13 +27,13 @@ double current_pos_theta;
 double goal_theta;
 
 //how fast the robot moves
-double rot_vel=.1;
+double rot_vel=.35;
 double drive_speed = .1;
 
 //allowable errors to account for the robot coasting a bit after being sent one stop command
-double angle_error = .005;
+double angle_error = .1;
 double angle_pos_error = .009;
-double distance_error = .01;
+double distance_error = .1;
 
 //used during rotations and various translations to hold the beginning state
 double start_x;
@@ -106,13 +107,16 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr& msg)
 	tf::quaternionMsgToTF(msg->pose.pose.orientation, quat);
 	double roll;
 	double pitch;
-	tf::Matrix3x3(quat).getRPY(roll, pitch, current_theta);
-	current_theta = angles::normalize_angle_positive(current_theta);
+	double yaw;
+	tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+	current_theta = angles::normalize_angle_positive(yaw);
 }
 
-void bumpCallback(const gazebo_msgs::ContactsState& msg)
+
+
+void bumpCallback(const create_node::TurtlebotSensorState& msg)
 {
-	if(!msg.states.empty())
+	if(msg.bumps_wheeldrops>0)
 	{
 		bump_sensor = true;
 	}
@@ -455,10 +459,11 @@ int main(int argc, char **argv)
 
 	//Creates the publisher, and tells it to publish
 	//to the /cmd_vel topic, with a queue size of 100
-	ros::Publisher pub=nh.advertise<geometry_msgs::Twist>("/cmd_vel", 100);
+	ros::Publisher pub=nh.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/navi", 100);
 	//Creates Subscribers to the odometry and contact sensor topics
-	ros::Subscriber odom =nh.subscribe("odom", 100, odomCallback);
-	ros::Subscriber bump =nh.subscribe("base_bumper", 100, bumpCallback);
+	ros::Subscriber odom =nh.subscribe("odom", 1000, odomCallback);
+
+	ros::Subscriber bump =nh.subscribe("/mobile_base/sensors/core", 100, bumpCallback);
 	ros::Rate rate(10);
 
 	srand(0);
@@ -475,9 +480,10 @@ int main(int argc, char **argv)
 			ros::shutdown();
 			return 0;
 		}
+		
 		else
 		{
-			ssrS(rando);
+			ssrS(0);
 		}
 		
 		ROS_INFO("random: %d count: %d j: %d, n: %d", random1, count, j, n);

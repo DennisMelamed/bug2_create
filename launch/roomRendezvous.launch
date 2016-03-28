@@ -1,17 +1,22 @@
-<?xml version ="1.0"?>
+
 <launch>
 
 
-  <include file="$(find gazebo_ros)/launch/empty_world.launch"/>
-	
+ <!-- <include file="$(find gazebo_ros)/launch/empty_world.launch"/>-->
+  <include file="$(find turtlebot_bringup)/launch/minimal.launch"/>
+  <!--<include file="$(find turtlebot_teleop)/launch/keyboard_teleop.launch"/>-->
 
- 
+
   
-  <node name="spawn_sdf" pkg="gazebo_ros" type="spawn_model" args="-file /home/dennis/catkin_ws/src/create/model-1_4.sdf -sdf -model create" />
- <!--<node name="spawn_sdf1" pkg="gazebo_ros" type="spawn_model" args="-file /home/dennis/catkin_ws/src/create/model-1_4-2.sdf -sdf -x 1 -model create1" /> -->
+ <!--<node name="spawn_sdf" pkg="gazebo_ros" type="spawn_model" args="-file /home/dennis/catkin_ws/src/create/model-1_4.sdf -sdf -model create" />-->
+ <!--<node name="spawn_sdf1" pkg="gazebo_ros" type="spawn_model" args="-file /home/dennis/catkin_ws/src/create/model-1_4-2.sdf -sdf -x 2 -model create1" />-->
   
-  <node name="roomRendezvous" pkg="bump" type="roomRendezvous"/>
- <!-- <node name="roomRendezvous1" pkg="bump" type="roomRendezvous1"/> -->
+  <node name="realroomRendezvous" pkg="bump" type="realRoomRendezvous"/>
+  <!--<node name="rotationTest" pkg="bump" type="rotationTest"/>-->
+  	
+  	<!--<node name="odom_listen" pkg="bump" type="odom_listen"/>-->
+  	
+<!--<node name="roomRendezvous1" pkg="bump" type="roomRendezvous1"/>-->
 
 </launch>
 
